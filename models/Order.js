@@ -111,28 +111,16 @@ const orderSchema = new mongoose.Schema(
     // ====================================================
 
     pricing: {
-      rate: {
+      basePrice: {
         type: Number,
         required: true,
         min: 0,
-      },
-
-      numberOfPages: {
-        type: Number,
-        required: true,
-        min: 1,
       },
 
       lineSpacingMultiplier: {
         type: Number,
         required: true,
-        min: 0,
-      },
-
-      baseAmount: {
-        type: Number,
-        required: true,
-        min: 0,
+        min: 1,
       },
 
       calculatedAmount: {
@@ -185,6 +173,7 @@ const orderSchema = new mongoose.Schema(
         type: String,
         trim: true,
         maxlength: 500,
+        default: "",
       },
     },
 

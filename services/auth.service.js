@@ -103,7 +103,6 @@ const login = async ({ email, password }) => {
 
   return {
     token,
-
     user: buildUserResponse(user),
   };
 };
@@ -132,10 +131,7 @@ const checkEmailAvailability = async (email) => {
 
 module.exports = {
   signup,
-
   login,
-
   getCurrentUser,
-
   checkEmailAvailability,
 };

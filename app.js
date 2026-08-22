@@ -5,13 +5,20 @@ const morgan = require("morgan");
 
 const authRoutes = require("./routes/auth.routes");
 
+const orderRoutes = require("./routes/order.routes");
+
+const paymentRoutes = require("./routes/payment.routes");
+
+const paymentController = require("./controllers/payment.controller");
+
 const notFound = require("./middleware/notFound.middleware");
+
 const errorHandler = require("./middleware/error.middleware");
 
 const app = express();
 
 // ============================================================
-// SECURITY MIDDLEWARE
+// SECURITY
 // ============================================================
 
 app.use(helmet());
@@ -23,8 +30,28 @@ app.use(helmet());
 app.use(
   cors({
     origin: process.env.CLIENT_URL || "http://localhost:5173",
+
     credentials: true,
   }),
+);
+
+// ============================================================
+// STRIPE WEBHOOK
+//
+// IMPORTANT:
+// This MUST come before express.json()
+// because Stripe signature verification
+// requires the raw request body.
+// ============================================================
+
+app.post(
+  "/api/v1/payments/stripe/webhook",
+
+  express.raw({
+    type: "application/json",
+  }),
+
+  paymentController.stripeWebhook,
 );
 
 // ============================================================
@@ -53,30 +80,43 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 // ============================================================
-// HEALTH CHECK
+// HEALTH
 // ============================================================
 
 app.get("/api/v1/health", (req, res) => {
   return res.status(200).json({
     success: true,
-    message: "Assignment Mavens API is running",
+
+    message: "Assignment backend API is running",
   });
 });
 
 // ============================================================
-// API ROUTES
+// AUTH
 // ============================================================
 
 app.use("/api/v1/auth", authRoutes);
 
 // ============================================================
-// 404 HANDLER
+// ORDERS
+// ============================================================
+
+app.use("/api/v1/orders", orderRoutes);
+
+// ============================================================
+// PAYMENTS
+// ============================================================
+
+app.use("/api/v1/payments", paymentRoutes);
+
+// ============================================================
+// 404
 // ============================================================
 
 app.use(notFound);
 
 // ============================================================
-// GLOBAL ERROR HANDLER
+// ERROR HANDLER
 // ============================================================
 
 app.use(errorHandler);

@@ -1,9 +1,3 @@
-const ApiError = require("../utils/ApiError");
-
-// ============================================================
-// DEADLINE RATES
-// ============================================================
-
 const DEADLINE_RATES = {
   "15 days": 9.0,
   "10 days": 10.2,
@@ -18,70 +12,47 @@ const DEADLINE_RATES = {
   "3 hours": 15.7,
 };
 
-// ============================================================
-// LINE SPACING
-// ============================================================
-
 const LINE_SPACING_MULTIPLIERS = {
-  // User specified:
-  // Double = x1
-
   double: 1,
-
-  // User specified:
-  // Single = x2
-
   single: 2,
 };
 
-// ============================================================
-// CALCULATE PRICE
-// ============================================================
+const calculatePrice = ({ deadline, lineSpacing }) => {
+  const basePrice = DEADLINE_RATES[deadline];
 
-const calculatePrice = ({ deadline, numberOfPages, lineSpacing }) => {
-  if (!DEADLINE_RATES[deadline]) {
-    throw new ApiError(400, "Invalid deadline");
+  if (basePrice === undefined) {
+    throw new Error(`Invalid deadline: ${deadline}`);
   }
 
-  if (!Number.isInteger(numberOfPages) || numberOfPages < 1) {
-    throw new ApiError(400, "Number of pages must be at least 1");
+  const multiplier = LINE_SPACING_MULTIPLIERS[lineSpacing];
+
+  if (multiplier === undefined) {
+    throw new Error(`Invalid line spacing: ${lineSpacing}`);
   }
 
-  if (!LINE_SPACING_MULTIPLIERS[lineSpacing]) {
-    throw new ApiError(400, "Invalid line spacing");
-  }
-
-  const rate = DEADLINE_RATES[deadline];
-
-  const lineSpacingMultiplier = LINE_SPACING_MULTIPLIERS[lineSpacing];
-
-  const baseAmount = rate * numberOfPages;
-
-  const calculatedAmount = baseAmount * lineSpacingMultiplier;
+  const calculatedAmount = Number((basePrice * multiplier).toFixed(2));
 
   return {
-    rate,
-
-    numberOfPages,
+    basePrice,
 
     lineSpacing,
 
-    lineSpacingMultiplier,
+    lineSpacingMultiplier: multiplier,
 
-    baseAmount: Number(baseAmount.toFixed(2)),
-
-    calculatedAmount: Number(calculatedAmount.toFixed(2)),
+    calculatedAmount,
 
     discountAmount: 0,
 
-    finalAmount: Number(calculatedAmount.toFixed(2)),
+    discountPercentage: 0,
 
-    currency: "usd",
+    finalAmount: calculatedAmount,
+
+    priceVersion: 1,
   };
 };
 
 module.exports = {
+  calculatePrice,
   DEADLINE_RATES,
   LINE_SPACING_MULTIPLIERS,
-  calculatePrice,
 };
