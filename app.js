@@ -7,6 +7,7 @@ const authRoutes = require("./routes/auth.routes");
 const orderRoutes = require("./routes/order.routes");
 const paymentRoutes = require("./routes/payment.routes");
 const siteRoutes = require("./routes/site.routes");
+const contactRoutes =require("./routes/contact.routes");
 const paymentController = require("./controllers/payment.controller");
 const notFound = require("./middleware/notFound.middleware");
 const errorHandler = require("./middleware/error.middleware");
@@ -108,6 +109,8 @@ app.use("/api/v1/payments", paymentRoutes);
 // SITE CONFIG
 // ============================================================
 app.use("/api/v1/site", siteRoutes);
+
+app.use("/api/v1/contact",contactRoutes);
 
 // ============================================================
 // 404
