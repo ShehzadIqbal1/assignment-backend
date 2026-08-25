@@ -15,10 +15,7 @@ const createOrderValidator = [
     .notEmpty()
     .withMessage("Academic level is required"),
 
-  body("subject")
-    .trim()
-    .notEmpty()
-    .withMessage("Subject is required"),
+  body("subject").trim().notEmpty().withMessage("Subject is required"),
 
   body("title")
     .trim()
@@ -29,10 +26,16 @@ const createOrderValidator = [
     })
     .withMessage("Project title cannot exceed 500 characters"),
 
-  body("deadline")
+  body("tag")
     .trim()
     .notEmpty()
-    .withMessage("Deadline is required"),
+    .withMessage("Website tag is required")
+    .isLength({
+      max: 100,
+    })
+    .withMessage("Tag cannot exceed 100 characters"),
+
+  body("deadline").trim().notEmpty().withMessage("Deadline is required"),
 
   body("numberOfPages")
     .isInt({
@@ -64,9 +67,7 @@ const createOrderValidator = [
 // ============================================================
 
 const orderIdValidator = [
-  param("orderId")
-    .isMongoId()
-    .withMessage("Invalid order ID"),
+  param("orderId").isMongoId().withMessage("Invalid order ID"),
 ];
 
 // ============================================================
@@ -127,9 +128,7 @@ const updatePriceValidator = [
       min: 0,
       max: 100,
     })
-    .withMessage(
-      "Discount percentage must be between 0 and 100"
-    ),
+    .withMessage("Discount percentage must be between 0 and 100"),
 
   body("finalAmount")
     .optional()
@@ -144,9 +143,7 @@ const updatePriceValidator = [
     .isLength({
       max: 500,
     })
-    .withMessage(
-      "Discount reason cannot exceed 500 characters"
-    ),
+    .withMessage("Discount reason cannot exceed 500 characters"),
 ];
 
 // ============================================================

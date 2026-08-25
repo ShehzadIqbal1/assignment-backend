@@ -2,13 +2,11 @@ const Order = require("../models/Order");
 const OrderEvent = require("../models/OrderEvent");
 
 const orderRepository = require("../repositories/order.repository");
-
 const paymentRepository = require("../repositories/payment.repository");
 
 const { calculatePrice } = require("./pricing.service");
 
 const ORDER_STATUS = require("../constants/orderStatus");
-
 const ROLES = require("../constants/roles");
 
 const ApiError = require("../utils/ApiError");
@@ -18,14 +16,27 @@ const ApiError = require("../utils/ApiError");
 // ============================================================
 
 const createOrder = async (studentId, data) => {
+  /*
+   * Pricing depends ONLY on:
+   * 1. Deadline
+   * 2. Line spacing
+   *
+   * Number of pages has no impact on pricing.
+   */
+
   const pricing = calculatePrice({
     deadline: data.deadline,
-    numberOfPages: data.numberOfPages,
     lineSpacing: data.lineSpacing,
   });
 
   const order = await orderRepository.createOrder({
     studentId,
+
+    // Website source tag
+    // Example:
+    // tutorify
+    // assignmentmavens
+    tag: data.tag,
 
     assignmentType: data.assignmentType,
 
@@ -37,6 +48,8 @@ const createOrder = async (studentId, data) => {
 
     deadline: data.deadline,
 
+    // Stored for assignment details only
+    // NOT used in pricing
     numberOfPages: data.numberOfPages,
 
     wordCount: data.wordCount || 0,
@@ -78,9 +91,14 @@ const createOrder = async (studentId, data) => {
 // ============================================================
 // UPDATE ORDER PRICING INPUTS
 //
-// Student can change deadline/pages/line spacing before payment.
-// Backend recalculates the price.
-// Client NEVER sends the price.
+// Student can update:
+// - deadline
+// - numberOfPages
+// - lineSpacing
+//
+// Price recalculates ONLY using:
+// - deadline
+// - lineSpacing
 // ============================================================
 
 const updateOrderPricing = async (orderId, studentId, data) => {
@@ -96,10 +114,6 @@ const updateOrderPricing = async (orderId, studentId, data) => {
     throw new ApiError(400, "Order pricing can no longer be changed");
   }
 
-  // --------------------------------------------------------
-  // Check for an active/processing payment
-  // --------------------------------------------------------
-
   const existingPayment = await paymentRepository.findByOrder(orderId);
 
   if (
@@ -112,9 +126,9 @@ const updateOrderPricing = async (orderId, studentId, data) => {
     );
   }
 
-  // --------------------------------------------------------
-  // Update only pricing-related selections
-  // --------------------------------------------------------
+  // -------------------------------
+  // Update order inputs
+  // -------------------------------
 
   if (data.deadline !== undefined) {
     order.deadline = data.deadline;
@@ -128,24 +142,20 @@ const updateOrderPricing = async (orderId, studentId, data) => {
     order.lineSpacing = data.lineSpacing;
   }
 
-  // --------------------------------------------------------
-  // Backend recalculates
-  // --------------------------------------------------------
+  /*
+   * IMPORTANT:
+   *
+   * Pages are ignored here.
+   *
+   * Price =
+   * deadline × lineSpacing
+   */
 
   const pricing = calculatePrice({
     deadline: order.deadline,
 
-    numberOfPages: order.numberOfPages,
-
     lineSpacing: order.lineSpacing,
   });
-
-  /*
-   * Recalculate from the ORIGINAL calculation.
-   *
-   * Any previous discount becomes invalid when the
-   * pricing inputs change.
-   */
 
   order.pricing = {
     ...pricing,
@@ -208,21 +218,15 @@ const confirmOrder = async (orderId, studentId) => {
   const previousStatus = order.status;
 
   /*
-   * Recalculate one final time before confirmation.
+   * Final price calculation before payment.
    *
-   * This protects us even if the frontend's displayed
-   * price is stale.
+   * Pages are ignored.
    */
 
   const pricing = calculatePrice({
     deadline: order.deadline,
     lineSpacing: order.lineSpacing,
   });
-
-  /*
-   * Confirmation resets any accidental stale discount.
-   * Admin/Sales can apply a discount after confirmation.
-   */
 
   order.pricing = {
     ...pricing,
@@ -306,33 +310,16 @@ const updatePrice = async (
     throw new ApiError(400, "Price can only be changed before payment");
   }
 
-  const existingPayment = await paymentRepository.findByOrder(orderId);
-
-  if (
-    existingPayment &&
-    ["processing", "succeeded"].includes(existingPayment.status)
-  ) {
-    throw new ApiError(
-      400,
-      "Price cannot be changed while payment is processing or completed",
-    );
-  }
-
   const calculatedAmount = order.pricing.calculatedAmount;
 
   const providedOptions = [
     discountAmount !== undefined,
-
     discountPercentage !== undefined,
-
     finalAmount !== undefined,
   ].filter(Boolean).length;
 
   if (providedOptions !== 1) {
-    throw new ApiError(
-      400,
-      "Provide exactly one of discountAmount, discountPercentage, or finalAmount",
-    );
+    throw new ApiError(400, "Provide exactly one pricing modification");
   }
 
   let newDiscountAmount = 0;
@@ -340,10 +327,6 @@ const updatePrice = async (
   let newDiscountPercentage = 0;
 
   let newFinalAmount = calculatedAmount;
-
-  // --------------------------------------------------------
-  // Discount amount
-  // --------------------------------------------------------
 
   if (discountAmount !== undefined) {
     if (discountAmount < 0 || discountAmount > calculatedAmount) {
@@ -359,10 +342,6 @@ const updatePrice = async (
     );
   }
 
-  // --------------------------------------------------------
-  // Discount percentage
-  // --------------------------------------------------------
-
   if (discountPercentage !== undefined) {
     if (discountPercentage < 0 || discountPercentage > 100) {
       throw new ApiError(400, "Discount percentage must be between 0 and 100");
@@ -377,26 +356,18 @@ const updatePrice = async (
     newFinalAmount = Number((calculatedAmount - newDiscountAmount).toFixed(2));
   }
 
-  // --------------------------------------------------------
-  // Direct final amount
-  // --------------------------------------------------------
-
   if (finalAmount !== undefined) {
     if (finalAmount < 0 || finalAmount > calculatedAmount) {
-      throw new ApiError(
-        400,
-        "Final price must be between 0 and the calculated price",
-      );
+      throw new ApiError(400, "Final amount cannot exceed calculated price");
     }
 
     newFinalAmount = Number(finalAmount.toFixed(2));
 
     newDiscountAmount = Number((calculatedAmount - newFinalAmount).toFixed(2));
 
-    newDiscountPercentage =
-      calculatedAmount === 0
-        ? 0
-        : Number(((newDiscountAmount / calculatedAmount) * 100).toFixed(2));
+    newDiscountPercentage = Number(
+      ((newDiscountAmount / calculatedAmount) * 100).toFixed(2),
+    );
   }
 
   order.pricing.discountAmount = newDiscountAmount;

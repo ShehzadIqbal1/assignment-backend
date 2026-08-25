@@ -4,17 +4,12 @@ const helmet = require("helmet");
 const morgan = require("morgan");
 
 const authRoutes = require("./routes/auth.routes");
-
 const orderRoutes = require("./routes/order.routes");
-
 const paymentRoutes = require("./routes/payment.routes");
-
+const siteRoutes = require("./routes/site.routes");
 const paymentController = require("./controllers/payment.controller");
-
 const notFound = require("./middleware/notFound.middleware");
-
 const errorHandler = require("./middleware/error.middleware");
-
 const app = express();
 
 // ============================================================
@@ -108,6 +103,11 @@ app.use("/api/v1/orders", orderRoutes);
 // ============================================================
 
 app.use("/api/v1/payments", paymentRoutes);
+
+// ============================================================
+// SITE CONFIG
+// ============================================================
+app.use("/api/v1/site", siteRoutes);
 
 // ============================================================
 // 404

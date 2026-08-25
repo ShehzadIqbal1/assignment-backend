@@ -14,7 +14,13 @@ const orderSchema = new mongoose.Schema(
       sparse: true,
       index: true,
     },
-
+    tag: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+      index: true,
+    },
     // ====================================================
     // OWNER
     // ====================================================
@@ -29,7 +35,6 @@ const orderSchema = new mongoose.Schema(
     // ====================================================
     // ORDER DETAILS
     // ====================================================
-
     assignmentType: {
       type: String,
       required: true,
