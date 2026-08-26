@@ -3,15 +3,13 @@ const { sendContactEmail } = require("../services/email.service");
 const asyncHandler = require("../utils/asyncHandler");
 
 const submitContactForm = asyncHandler(async (req, res) => {
-  const { name, email, phone, message } = req.body;
+  const { tag, name, email, phone, message } = req.body;
 
   await sendContactEmail({
+    tag,
     name,
-
     email,
-
     phone,
-
     message,
   });
 

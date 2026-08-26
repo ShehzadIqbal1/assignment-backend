@@ -1,50 +1,66 @@
 const { Resend } = require("resend");
 
+const websiteEmails = require("../config/websiteEmails");
+
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const sendContactEmail = async ({ name, email, phone, message }) => {
+const sendContactEmail = async ({ tag, name, email, phone, message }) => {
+  const website = websiteEmails[tag];
+
+  if (!website) {
+    throw new Error("Invalid website tag");
+  }
+
   const response = await resend.emails.send({
-    from: process.env.RESEND_FROM_EMAIL,
+    from: website.from,
 
-    to: process.env.CONTACT_EMAIL,
+    to: website.to,
 
-    subject: `New Contact Form Submission - ${name}`,
+    reply_to: email,
+
+    subject: `New Contact Form Submission - ${tag}`,
 
     html: `
 
-      <h2>
+        <h2>
         New Contact Request
-      </h2>
+        </h2>
 
 
-      <p>
+        <p>
+        <strong>Website:</strong>
+        ${tag}
+        </p>
+
+
+        <p>
         <strong>Name:</strong>
         ${name}
-      </p>
+        </p>
 
 
-      <p>
+        <p>
         <strong>Email:</strong>
         ${email}
-      </p>
+        </p>
 
 
-      <p>
+        <p>
         <strong>Phone:</strong>
         ${phone}
-      </p>
+        </p>
 
 
-      <p>
+        <p>
         <strong>Message:</strong>
-      </p>
+        </p>
 
 
-      <p>
+        <p>
         ${message}
-      </p>
+        </p>
 
-    `,
+        `,
   });
 
   return response;

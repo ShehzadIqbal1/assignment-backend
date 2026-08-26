@@ -7,7 +7,7 @@ const authRoutes = require("./routes/auth.routes");
 const orderRoutes = require("./routes/order.routes");
 const paymentRoutes = require("./routes/payment.routes");
 const siteRoutes = require("./routes/site.routes");
-const contactRoutes =require("./routes/contact.routes");
+const contactRoutes = require("./routes/contact.routes");
 const paymentController = require("./controllers/payment.controller");
 const notFound = require("./middleware/notFound.middleware");
 const errorHandler = require("./middleware/error.middleware");
@@ -23,14 +23,21 @@ app.use(helmet());
 // CORS
 // ============================================================
 
+const allowedOrigins = process.env.CLIENT_URLS.split(",");
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("CORS not allowed"));
+      }
+    },
 
     credentials: true,
   }),
 );
-
 // ============================================================
 // STRIPE WEBHOOK
 //
@@ -110,7 +117,7 @@ app.use("/api/v1/payments", paymentRoutes);
 // ============================================================
 app.use("/api/v1/site", siteRoutes);
 
-app.use("/api/v1/contact",contactRoutes);
+app.use("/api/v1/contact", contactRoutes);
 
 // ============================================================
 // 404
