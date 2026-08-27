@@ -287,6 +287,10 @@ const getStudentOrder = async (orderId, studentId) => {
   return order;
 };
 
+const findStudentOrders = async (studentId) => {
+  return await orderRepository.findOrdersByStudentId(studentId);
+};
+
 // ============================================================
 // ADMIN / SALES AGENT PRICE UPDATE
 // ============================================================
@@ -416,5 +420,6 @@ module.exports = {
   updateOrderPricing,
   confirmOrder,
   getStudentOrder,
+  findStudentOrders,
   updatePrice,
 };

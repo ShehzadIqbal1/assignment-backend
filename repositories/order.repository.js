@@ -9,9 +9,8 @@ const findById = async (orderId) => {
 };
 
 const findStudentOrder = async (orderId, studentId) => {
-  return Order.findOne({
+  return await Order.findOne({
     _id: orderId,
-
     studentId,
   });
 };
@@ -23,9 +22,21 @@ const updateOrder = async (orderId, updates) => {
   });
 };
 
+const findOrdersByStudentId = async (studentId) => {
+
+    return Order.find({
+        studentId
+    })
+    .sort({
+        createdAt:-1
+    });
+
+};
+
 module.exports = {
   createOrder,
   findById,
   findStudentOrder,
   updateOrder,
+  findOrdersByStudentId,
 };

@@ -73,23 +73,28 @@ router.post(
   controller.confirmOrder,
 );
 
+//get student oder based on studentId
+router.get(
+  "/my-orders",
+  authenticate,
+  authorize(ROLES.STUDENT),
+  controller.getMyOrders
+);
+
 // ============================================================
 // STUDENT GET OWN ORDER
 // ============================================================
 
 router.get(
   "/:orderId",
-
   authenticate,
-
   authorize(ROLES.STUDENT),
-
   orderIdValidator,
-
   validate,
-
   controller.getStudentOrder,
 );
+
+
 
 // ============================================================
 // ADMIN / SALES AGENT EDIT PRICE
@@ -108,5 +113,7 @@ router.patch(
 
   controller.updatePrice,
 );
+
+
 
 module.exports = router;

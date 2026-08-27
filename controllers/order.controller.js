@@ -88,6 +88,23 @@ const getStudentOrder = asyncHandler(async (req, res) => {
 });
 
 // ============================================================
+// GET LOGGED IN STUDENT ORDERS
+// ============================================================
+
+const getMyOrders = asyncHandler(async (req, res) => {
+  const orders = await orderService.findStudentOrders(
+    req.user.userId
+  );
+  return res.status(200).json({
+    success: true,
+    data: {
+      orders,
+    },
+  });
+
+});
+
+// ============================================================
 // UPDATE ORDER PRICE
 // Admin / Sales Agent
 // ============================================================
@@ -119,5 +136,6 @@ module.exports = {
   updateOrderPricing,
   confirmOrder,
   getStudentOrder,
+  getMyOrders,
   updatePrice,
 };
