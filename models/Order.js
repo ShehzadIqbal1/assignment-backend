@@ -14,6 +14,13 @@ const orderSchema = new mongoose.Schema(
       sparse: true,
       index: true,
     },
+
+    // Website that created the order
+    //
+    // Example:
+    // tutorspath
+    // tutorsnext
+    //
     tag: {
       type: String,
       required: true,
@@ -21,6 +28,7 @@ const orderSchema = new mongoose.Schema(
       lowercase: true,
       index: true,
     },
+
     // ====================================================
     // OWNER
     // ====================================================
@@ -35,6 +43,7 @@ const orderSchema = new mongoose.Schema(
     // ====================================================
     // ORDER DETAILS
     // ====================================================
+
     assignmentType: {
       type: String,
       required: true,
@@ -88,11 +97,13 @@ const orderSchema = new mongoose.Schema(
       type: String,
       trim: true,
       maxlength: 10000,
+      default: "",
     },
 
     citationStyle: {
       type: String,
       trim: true,
+      default: "",
     },
 
     references: {
@@ -104,11 +115,48 @@ const orderSchema = new mongoose.Schema(
     fontStyle: {
       type: String,
       trim: true,
+      default: "",
     },
 
     language: {
       type: String,
       trim: true,
+      default: "",
+    },
+
+    // ====================================================
+    // ADD-ONS
+    // ====================================================
+    //
+    // Optional.
+    //
+    // If student selects nothing:
+    //
+    // addOns: []
+    //
+    // We store the price snapshot because the website's
+    // pricing configuration could change later.
+    //
+    // ====================================================
+
+    addOns: {
+      type: [
+        {
+          name: {
+            type: String,
+            required: true,
+            trim: true,
+          },
+
+          price: {
+            type: Number,
+            required: true,
+            min: 0,
+          },
+        },
+      ],
+
+      default: [],
     },
 
     // ====================================================
@@ -116,10 +164,17 @@ const orderSchema = new mongoose.Schema(
     // ====================================================
 
     pricing: {
-      basePrice: {
+      // Price per page based on selected deadline
+      rate: {
         type: Number,
         required: true,
         min: 0,
+      },
+
+      numberOfPages: {
+        type: Number,
+        required: true,
+        min: 1,
       },
 
       lineSpacingMultiplier: {
@@ -128,12 +183,29 @@ const orderSchema = new mongoose.Schema(
         min: 1,
       },
 
+      // Deadline rate × spacing × pages
+      assignmentAmount: {
+        type: Number,
+        required: true,
+        min: 0,
+      },
+
+      // Total price of selected add-ons
+      addOnsAmount: {
+        type: Number,
+        required: true,
+        min: 0,
+        default: 0,
+      },
+
+      // Assignment + add-ons before discount
       calculatedAmount: {
         type: Number,
         required: true,
         min: 0,
       },
 
+      // Discount applied by admin/sales
       discountAmount: {
         type: Number,
         default: 0,
@@ -147,7 +219,18 @@ const orderSchema = new mongoose.Schema(
         max: 100,
       },
 
+      // Final customer-facing amount
       finalAmount: {
+        type: Number,
+        required: true,
+        min: 0,
+      },
+
+      // Amount sent to Stripe
+      //
+      // USD $15.70 = 1570
+      //
+      amountInSubunits: {
         type: Number,
         required: true,
         min: 0,
@@ -155,7 +238,20 @@ const orderSchema = new mongoose.Schema(
 
       currency: {
         type: String,
-        default: "usd",
+        required: true,
+        lowercase: true,
+        trim: true,
+      },
+
+      // Example:
+      //
+      // USD = 100
+      // JPY = 1
+      //
+      subunitFactor: {
+        type: Number,
+        required: true,
+        min: 1,
       },
 
       priceVersion: {
@@ -188,7 +284,13 @@ const orderSchema = new mongoose.Schema(
 
     paymentStatus: {
       type: String,
-      enum: ["pending", "processing", "paid", "failed", "refunded"],
+      enum: [
+        "pending",
+        "processing",
+        "paid",
+        "failed",
+        "refunded",
+      ],
       default: "pending",
       index: true,
     },
@@ -249,4 +351,12 @@ orderSchema.index({
   createdAt: -1,
 });
 
-module.exports = mongoose.model("Order", orderSchema);
+orderSchema.index({
+  tag: 1,
+  createdAt: -1,
+});
+
+module.exports = mongoose.model(
+  "Order",
+  orderSchema,
+);

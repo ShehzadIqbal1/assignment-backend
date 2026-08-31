@@ -1,4 +1,7 @@
-const { body, param } = require("express-validator");
+const {
+  body,
+  param,
+} = require("express-validator");
 
 // ============================================================
 // CREATE ORDER
@@ -8,58 +11,147 @@ const createOrderValidator = [
   body("assignmentType")
     .trim()
     .notEmpty()
-    .withMessage("Assignment type is required"),
+    .withMessage(
+      "Assignment type is required",
+    ),
 
   body("academicLevel")
     .trim()
     .notEmpty()
-    .withMessage("Academic level is required"),
+    .withMessage(
+      "Academic level is required",
+    ),
 
-  body("subject").trim().notEmpty().withMessage("Subject is required"),
+  body("subject")
+    .trim()
+    .notEmpty()
+    .withMessage(
+      "Subject is required",
+    ),
 
   body("title")
     .trim()
     .notEmpty()
-    .withMessage("Project title is required")
+    .withMessage(
+      "Project title is required",
+    )
     .isLength({
       max: 500,
     })
-    .withMessage("Project title cannot exceed 500 characters"),
+    .withMessage(
+      "Project title cannot exceed 500 characters",
+    ),
+
+  // ----------------------------------------------------------
+  // WEBSITE TAG
+  // ----------------------------------------------------------
 
   body("tag")
     .trim()
     .notEmpty()
-    .withMessage("Website tag is required")
+    .withMessage(
+      "Website tag is required",
+    )
     .isLength({
       max: 100,
     })
-    .withMessage("Tag cannot exceed 100 characters"),
+    .withMessage(
+      "Tag cannot exceed 100 characters",
+    ),
 
-  body("deadline").trim().notEmpty().withMessage("Deadline is required"),
+  // ----------------------------------------------------------
+  // DEADLINE
+  // ----------------------------------------------------------
+
+  body("deadline")
+    .trim()
+    .notEmpty()
+    .withMessage(
+      "Deadline is required",
+    ),
+
+  // ----------------------------------------------------------
+  // PAGES
+  // ----------------------------------------------------------
 
   body("numberOfPages")
     .isInt({
       min: 1,
     })
-    .withMessage("Number of pages must be at least 1"),
+    .withMessage(
+      "Number of pages must be at least 1",
+    ),
+
+  // ----------------------------------------------------------
+  // WORD COUNT
+  // ----------------------------------------------------------
 
   body("wordCount")
     .optional()
     .isInt({
       min: 0,
     })
-    .withMessage("Word count cannot be negative"),
+    .withMessage(
+      "Word count cannot be negative",
+    ),
+
+  // ----------------------------------------------------------
+  // LINE SPACING
+  // ----------------------------------------------------------
 
   body("lineSpacing")
-    .isIn(["single", "double"])
-    .withMessage("Line spacing must be single or double"),
+    .isIn([
+      "single",
+      "double",
+    ])
+    .withMessage(
+      "Line spacing must be single or double",
+    ),
+
+  // ----------------------------------------------------------
+  // REFERENCES
+  // ----------------------------------------------------------
 
   body("references")
     .optional()
     .isInt({
       min: 0,
     })
-    .withMessage("References cannot be negative"),
+    .withMessage(
+      "References cannot be negative",
+    ),
+
+  // ----------------------------------------------------------
+  // ADD-ONS
+  //
+  // OPTIONAL.
+  //
+  // Valid:
+  //
+  // addOns: []
+  //
+  // or:
+  //
+  // addOns: [
+  //   "Grammar Check Report"
+  // ]
+  //
+  // ----------------------------------------------------------
+
+  body("addOns")
+    .optional()
+    .isArray()
+    .withMessage(
+      "Add-ons must be an array",
+    ),
+
+  body("addOns.*")
+    .isString()
+    .trim()
+    .notEmpty()
+    .withMessage(
+      "Each add-on must be a valid name",
+    ),
 ];
 
 // ============================================================
@@ -67,18 +159,26 @@ const createOrderValidator = [
 // ============================================================
 
 const orderIdValidator = [
-  param("orderId").isMongoId().withMessage("Invalid order ID"),
+  param("orderId")
+    .isMongoId()
+    .withMessage(
+      "Invalid order ID",
+    ),
 ];
 
 // ============================================================
 // STUDENT PRICING UPDATE
+// ============================================================
 //
-// Student can change:
+// Student can update:
+//
 // - deadline
-// - number of pages
-// - line spacing
+// - numberOfPages
+// - lineSpacing
+// - addOns
 //
-// Backend recalculates the price.
+// Backend recalculates price.
+//
 // ============================================================
 
 const updateOrderPricingValidator = [
@@ -88,28 +188,55 @@ const updateOrderPricingValidator = [
     .optional()
     .trim()
     .notEmpty()
-    .withMessage("Deadline cannot be empty"),
+    .withMessage(
+      "Deadline cannot be empty",
+    ),
 
   body("numberOfPages")
     .optional()
     .isInt({
       min: 1,
     })
-    .withMessage("Number of pages must be at least 1"),
+    .withMessage(
+      "Number of pages must be at least 1",
+    ),
 
   body("lineSpacing")
     .optional()
-    .isIn(["single", "double"])
-    .withMessage("Line spacing must be single or double"),
+    .isIn([
+      "single",
+      "double",
+    ])
+    .withMessage(
+      "Line spacing must be single or double",
+    ),
+
+  body("addOns")
+    .optional()
+    .isArray()
+    .withMessage(
+      "Add-ons must be an array",
+    ),
+
+  body("addOns.*")
+    .isString()
+    .trim()
+    .notEmpty()
+    .withMessage(
+      "Each add-on must be a valid name",
+    ),
 ];
 
 // ============================================================
 // ADMIN / SALES AGENT PRICE UPDATE
+// ============================================================
 //
-// Exactly ONE of these should be supplied:
+// Exactly ONE:
+//
 // - discountAmount
 // - discountPercentage
 // - finalAmount
+//
 // ============================================================
 
 const updatePriceValidator = [
@@ -120,7 +247,9 @@ const updatePriceValidator = [
     .isFloat({
       min: 0,
     })
-    .withMessage("Discount amount cannot be negative"),
+    .withMessage(
+      "Discount amount cannot be negative",
+    ),
 
   body("discountPercentage")
     .optional()
@@ -128,14 +257,18 @@ const updatePriceValidator = [
       min: 0,
       max: 100,
     })
-    .withMessage("Discount percentage must be between 0 and 100"),
+    .withMessage(
+      "Discount percentage must be between 0 and 100",
+    ),
 
   body("finalAmount")
     .optional()
     .isFloat({
       min: 0,
     })
-    .withMessage("Final amount cannot be negative"),
+    .withMessage(
+      "Final amount cannot be negative",
+    ),
 
   body("discountReason")
     .optional()
@@ -143,7 +276,9 @@ const updatePriceValidator = [
     .isLength({
       max: 500,
     })
-    .withMessage("Discount reason cannot exceed 500 characters"),
+    .withMessage(
+      "Discount reason cannot exceed 500 characters",
+    ),
 ];
 
 // ============================================================
@@ -152,7 +287,10 @@ const updatePriceValidator = [
 
 module.exports = {
   createOrderValidator,
+
   orderIdValidator,
+
   updateOrderPricingValidator,
+
   updatePriceValidator,
 };
