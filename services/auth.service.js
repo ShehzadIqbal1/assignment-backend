@@ -8,19 +8,38 @@ const ApiError = require("../utils/ApiError");
 
 const { generateToken } = require("../utils/token");
 
+// ============================================================
+// BUILD USER RESPONSE
+// ============================================================
+
 const buildUserResponse = (user) => {
   return {
     id: user._id,
+
     fullName: user.fullName,
+
     email: user.email,
+
     countryCode: user.countryCode,
+
     phoneNumber: user.phoneNumber,
+
+    // Website source
+    tag: user.tag,
+
     role: user.role,
+
     isActive: user.isActive,
+
     emailVerified: user.emailVerified,
+
     createdAt: user.createdAt,
   };
 };
+
+// ============================================================
+// SIGNUP
+// ============================================================
 
 const signup = async ({
   fullName,
@@ -28,44 +47,83 @@ const signup = async ({
   countryCode,
   phoneNumber,
   password,
+  tag,
 }) => {
-  const normalizedEmail = email.trim().toLowerCase();
+  // ----------------------------------------------------------
+  // Normalize email
+  // ----------------------------------------------------------
 
-  const existingUser = await userRepository.findByEmail(normalizedEmail);
+  const normalizedEmail =
+    email.trim().toLowerCase();
+
+  // ----------------------------------------------------------
+  // Normalize website tag
+  // ----------------------------------------------------------
+
+  const normalizedTag =
+    tag.trim().toLowerCase();
+
+  // ----------------------------------------------------------
+  // Check existing user
+  // ----------------------------------------------------------
+
+  const existingUser =
+    await userRepository.findByEmail(
+      normalizedEmail,
+    );
 
   if (existingUser) {
-    throw new ApiError(409, "Email is already registered");
+    throw new ApiError(
+      409,
+      "Email is already registered",
+    );
   }
 
-  const passwordHash = await bcrypt.hash(password, 12);
+  // ----------------------------------------------------------
+  // Hash password
+  // ----------------------------------------------------------
+
+  const passwordHash =
+    await bcrypt.hash(password, 12);
 
   let user;
 
   try {
-    user = await userRepository.createUser({
-      fullName,
+    user =
+      await userRepository.createUser({
+        fullName,
 
-      email: normalizedEmail,
+        email: normalizedEmail,
 
-      countryCode,
+        countryCode,
 
-      phoneNumber,
+        phoneNumber,
 
-      password: passwordHash,
+        password: passwordHash,
 
-      // IMPORTANT:
-      // Public signup always creates
-      // a student account.
+        // Website from which the student registered
+        tag: normalizedTag,
 
-      role: ROLES.STUDENT,
-    });
+        // IMPORTANT:
+        // Public signup always creates
+        // a student account.
+        role: ROLES.STUDENT,
+      });
   } catch (error) {
+    // Handle duplicate email race condition
     if (error.code === 11000) {
-      throw new ApiError(409, "Email is already registered");
+      throw new ApiError(
+        409,
+        "Email is already registered",
+      );
     }
 
     throw error;
   }
+
+  // ----------------------------------------------------------
+  // Generate JWT
+  // ----------------------------------------------------------
 
   const token = generateToken(user);
 
@@ -76,62 +134,117 @@ const signup = async ({
   };
 };
 
-const login = async ({ email, password }) => {
-  const normalizedEmail = email.trim().toLowerCase();
+// ============================================================
+// LOGIN
+// ============================================================
 
-  const user = await userRepository.findByEmail(normalizedEmail, true);
+const login = async ({
+  email,
+  password,
+}) => {
+  const normalizedEmail =
+    email.trim().toLowerCase();
+
+  const user =
+    await userRepository.findByEmail(
+      normalizedEmail,
+      true,
+    );
 
   if (!user) {
-    throw new ApiError(401, "Invalid email or password");
+    throw new ApiError(
+      401,
+      "Invalid email or password",
+    );
   }
 
   if (!user.isActive) {
-    throw new ApiError(403, "Your account has been deactivated");
+    throw new ApiError(
+      403,
+      "Your account has been deactivated",
+    );
   }
 
-  const passwordMatches = await bcrypt.compare(password, user.password);
+  const passwordMatches =
+    await bcrypt.compare(
+      password,
+      user.password,
+    );
 
   if (!passwordMatches) {
-    throw new ApiError(401, "Invalid email or password");
+    throw new ApiError(
+      401,
+      "Invalid email or password",
+    );
   }
 
   user.lastLoginAt = new Date();
 
   await user.save();
 
-  const token = generateToken(user);
+  const token =
+    generateToken(user);
 
   return {
     token,
+
     user: buildUserResponse(user),
   };
 };
 
-const getCurrentUser = async (userId) => {
-  const user = await userRepository.findById(userId);
+// ============================================================
+// CURRENT USER
+// ============================================================
+
+const getCurrentUser = async (
+  userId,
+) => {
+  const user =
+    await userRepository.findById(
+      userId,
+    );
 
   if (!user) {
-    throw new ApiError(404, "User not found");
+    throw new ApiError(
+      404,
+      "User not found",
+    );
   }
 
   return buildUserResponse(user);
 };
 
-const checkEmailAvailability = async (email) => {
-  const normalizedEmail = email.trim().toLowerCase();
+// ============================================================
+// CHECK EMAIL
+// ============================================================
 
-  const user = await userRepository.findByEmail(normalizedEmail);
+const checkEmailAvailability =
+  async (email) => {
+    const normalizedEmail =
+      email.trim().toLowerCase();
 
-  return {
-    email: normalizedEmail,
+    const user =
+      await userRepository.findByEmail(
+        normalizedEmail,
+      );
 
-    available: !user,
+    return {
+      email: normalizedEmail,
+
+      available: !user,
+    };
   };
-};
+
+// ============================================================
+// EXPORTS
+// ============================================================
 
 module.exports = {
   signup,
+
   login,
+
   getCurrentUser,
+
   checkEmailAvailability,
 };

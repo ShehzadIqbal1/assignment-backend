@@ -4,6 +4,10 @@ const ROLES = require("../constants/roles");
 
 const userSchema = new mongoose.Schema(
   {
+    // ====================================================
+    // USER DETAILS
+    // ====================================================
+
     fullName: {
       type: String,
       required: [true, "Full name is required"],
@@ -39,12 +43,42 @@ const userSchema = new mongoose.Schema(
       select: false,
     },
 
+    // ====================================================
+    // WEBSITE SOURCE
+    // ====================================================
+    //
+    // Example:
+    // tutorspath
+    // tutorsnext
+    //
+    // This identifies which website the student
+    // registered from.
+    //
+    // ====================================================
+
+    tag: {
+      type: String,
+      required: [true, "Website tag is required"],
+      trim: true,
+      lowercase: true,
+      maxlength: 100,
+      index: true,
+    },
+
+    // ====================================================
+    // ROLE
+    // ====================================================
+
     role: {
       type: String,
       enum: Object.values(ROLES),
       default: ROLES.STUDENT,
       index: true,
     },
+
+    // ====================================================
+    // ACCOUNT STATUS
+    // ====================================================
 
     isActive: {
       type: Boolean,
@@ -62,9 +96,19 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
   },
+
   {
     timestamps: true,
   },
 );
+
+// ============================================================
+// INDEXES
+// ============================================================
+
+userSchema.index({
+  tag: 1,
+  createdAt: -1,
+});
 
 module.exports = mongoose.model("User", userSchema);
