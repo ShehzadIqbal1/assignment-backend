@@ -4,10 +4,7 @@ const OrderEvent = require("../models/OrderEvent");
 const orderRepository = require("../repositories/order.repository");
 const paymentRepository = require("../repositories/payment.repository");
 
-const {
-  calculatePrice,
-  toSubunit,
-} = require("./pricing.service");
+const { calculatePrice, toSubunit } = require("./pricing.service");
 
 const ORDER_STATUS = require("../constants/orderStatus");
 const ROLES = require("../constants/roles");
@@ -116,105 +113,62 @@ const createOrder = async (studentId, data) => {
 // ============================================================
 //
 // Student can change:
-//
-// - deadline
-// - numberOfPages
-// - lineSpacing
-//
-// Add-ons can also be updated if frontend sends addOns.
-//
+// complete order inputs
 // All pricing is recalculated on backend.
 //
 // ============================================================
 
-const updateOrderPricing = async (
-  orderId,
-  studentId,
-  data,
-) => {
-  const order =
-    await orderRepository.findStudentOrder(
-      orderId,
-      studentId,
-    );
+const updateOrder = async (orderId, studentId, data) => {
+  const order = await orderRepository.findStudentOrder(orderId, studentId);
 
   if (!order) {
-    throw new ApiError(
-      404,
-      "Order not found",
-    );
+    throw new ApiError(404, "Order not found");
   }
 
-  const allowedStatuses = [
-    ORDER_STATUS.DRAFT,
-    ORDER_STATUS.AWAITING_PAYMENT,
-  ];
+  const allowedStatuses = [ORDER_STATUS.DRAFT, ORDER_STATUS.AWAITING_PAYMENT];
 
   if (!allowedStatuses.includes(order.status)) {
-    throw new ApiError(
-      400,
-      "Order pricing can no longer be changed",
-    );
+    throw new ApiError(400, "Order can no longer be edited");
   }
 
-  const existingPayment =
-    await paymentRepository.findByOrder(
-      orderId,
-    );
+  const existingPayment = await paymentRepository.findByOrder(orderId);
 
   if (
     existingPayment &&
-    ["processing", "succeeded"].includes(
-      existingPayment.status,
-    )
+    ["processing", "succeeded"].includes(existingPayment.status)
   ) {
-    throw new ApiError(
-      400,
-      "Order price cannot be changed while payment is processing or completed",
-    );
+    throw new ApiError(400, "Order cannot be changed after payment");
   }
 
-  // ----------------------------------------------------------
-  // Update order inputs
-  // ----------------------------------------------------------
+  const editableFields = [
+    "assignmentType",
+    "academicLevel",
+    "subject",
+    "title",
+    "deadline",
+    "numberOfPages",
+    "wordCount",
+    "lineSpacing",
+    "guidelines",
+    "citationStyle",
+    "references",
+    "fontStyle",
+    "language",
+  ];
 
-  if (data.deadline !== undefined) {
-    order.deadline = data.deadline;
-  }
+  editableFields.forEach((field) => {
+    if (data[field] !== undefined) {
+      order[field] = data[field];
+    }
+  });
 
-  if (data.numberOfPages !== undefined) {
-    order.numberOfPages =
-      data.numberOfPages;
-  }
-
-  if (data.lineSpacing !== undefined) {
-    order.lineSpacing =
-      data.lineSpacing;
-  }
-
-  // ----------------------------------------------------------
-  // Add-ons
-  //
-  // If addOns is sent, replace selected add-ons.
-  //
-  // If addOns is NOT sent, preserve existing add-ons.
-  //
-  // ----------------------------------------------------------
-
-  let selectedAddOns = [];
+  let selectedAddOns;
 
   if (data.addOns !== undefined) {
     selectedAddOns = data.addOns;
   } else {
-    selectedAddOns =
-      (order.addOns || []).map(
-        (addon) => addon.name,
-      );
+    selectedAddOns = (order.addOns || []).map((a) => a.name);
   }
-
-  // ----------------------------------------------------------
-  // Recalculate price
-  // ----------------------------------------------------------
 
   const pricing = calculatePrice({
     tag: order.tag,
@@ -223,15 +177,12 @@ const updateOrderPricing = async (
 
     lineSpacing: order.lineSpacing,
 
-    numberOfPages:
-      order.numberOfPages,
+    numberOfPages: order.numberOfPages,
 
     addOns: selectedAddOns,
   });
 
-  // ----------------------------------------------------------
-  // Replace pricing snapshot
-  // ----------------------------------------------------------
+  order.addOns = pricing.addOns;
 
   order.pricing = {
     ...pricing,
@@ -240,14 +191,9 @@ const updateOrderPricing = async (
 
     discountPercentage: 0,
 
-    finalAmount:
-      pricing.calculatedAmount,
+    finalAmount: pricing.calculatedAmount,
 
-    amountInSubunits:
-      pricing.amountInSubunits,
-
-    priceVersion:
-      (order.pricing.priceVersion || 1) + 1,
+    priceVersion: order.pricing.priceVersion + 1,
 
     priceEditedBy: null,
 
@@ -255,9 +201,6 @@ const updateOrderPricing = async (
 
     discountReason: "",
   };
-
-  // Store add-on snapshots
-  order.addOns = pricing.addOns;
 
   await order.save();
 
@@ -268,62 +211,31 @@ const updateOrderPricing = async (
 
     role: ROLES.STUDENT,
 
-    action: "orderPricingUpdated",
+    action: "orderUpdated",
 
     metadata: {
-      deadline: order.deadline,
-
-      numberOfPages:
-        order.numberOfPages,
-
-      lineSpacing:
-        order.lineSpacing,
-
-      addOns: order.addOns,
-
-      calculatedAmount:
-        order.pricing.calculatedAmount,
-
-      finalAmount:
-        order.pricing.finalAmount,
+      updatedFields: Object.keys(data),
     },
   });
 
   return order;
 };
-
 // ============================================================
 // CONFIRM ORDER
 // ============================================================
 
-const confirmOrder = async (
-  orderId,
-  studentId,
-) => {
-  const order =
-    await orderRepository.findStudentOrder(
-      orderId,
-      studentId,
-    );
+const confirmOrder = async (orderId, studentId) => {
+  const order = await orderRepository.findStudentOrder(orderId, studentId);
 
   if (!order) {
-    throw new ApiError(
-      404,
-      "Order not found",
-    );
+    throw new ApiError(404, "Order not found");
   }
 
-  if (
-    order.status !== ORDER_STATUS.DRAFT
-  ) {
-    throw new ApiError(
-      400,
-      "Only draft orders can be confirmed",
-    );
+  if (order.status !== ORDER_STATUS.DRAFT) {
+    throw new ApiError(400, "Only draft orders can be confirmed");
   }
 
-  const previousStatus =
-    order.status;
+  const previousStatus = order.status;
 
   // ----------------------------------------------------------
   // Final backend price calculation
@@ -335,21 +247,16 @@ const confirmOrder = async (
   // Existing selected add-ons are preserved.
   // ----------------------------------------------------------
 
-  const selectedAddOns =
-    (order.addOns || []).map(
-      (addon) => addon.name,
-    );
+  const selectedAddOns = (order.addOns || []).map((addon) => addon.name);
 
   const pricing = calculatePrice({
     tag: order.tag,
 
     deadline: order.deadline,
 
-    lineSpacing:
-      order.lineSpacing,
+    lineSpacing: order.lineSpacing,
 
-    numberOfPages:
-      order.numberOfPages,
+    numberOfPages: order.numberOfPages,
 
     addOns: selectedAddOns,
   });
@@ -361,14 +268,11 @@ const confirmOrder = async (
 
     discountPercentage: 0,
 
-    finalAmount:
-      pricing.calculatedAmount,
+    finalAmount: pricing.calculatedAmount,
 
-    amountInSubunits:
-      pricing.amountInSubunits,
+    amountInSubunits: pricing.amountInSubunits,
 
-    priceVersion:
-      (order.pricing.priceVersion || 1) + 1,
+    priceVersion: (order.pricing.priceVersion || 1) + 1,
 
     priceEditedBy: null,
 
@@ -379,8 +283,7 @@ const confirmOrder = async (
 
   order.addOns = pricing.addOns;
 
-  order.status =
-    ORDER_STATUS.AWAITING_PAYMENT;
+  order.status = ORDER_STATUS.AWAITING_PAYMENT;
 
   order.paymentStatus = "pending";
 
@@ -397,18 +300,14 @@ const confirmOrder = async (
 
     fromStatus: previousStatus,
 
-    toStatus:
-      ORDER_STATUS.AWAITING_PAYMENT,
+    toStatus: ORDER_STATUS.AWAITING_PAYMENT,
 
     metadata: {
-      finalAmount:
-        order.pricing.finalAmount,
+      finalAmount: order.pricing.finalAmount,
 
-      amountInSubunits:
-        order.pricing.amountInSubunits,
+      amountInSubunits: order.pricing.amountInSubunits,
 
-      currency:
-        order.pricing.currency,
+      currency: order.pricing.currency,
     },
   });
 
@@ -419,21 +318,11 @@ const confirmOrder = async (
 // GET STUDENT ORDER
 // ============================================================
 
-const getStudentOrder = async (
-  orderId,
-  studentId,
-) => {
-  const order =
-    await orderRepository.findStudentOrder(
-      orderId,
-      studentId,
-    );
+const getStudentOrder = async (orderId, studentId) => {
+  const order = await orderRepository.findStudentOrder(orderId, studentId);
 
   if (!order) {
-    throw new ApiError(
-      404,
-      "Order not found",
-    );
+    throw new ApiError(404, "Order not found");
   }
 
   return order;
@@ -443,12 +332,8 @@ const getStudentOrder = async (
 // GET ALL STUDENT ORDERS
 // ============================================================
 
-const findStudentOrders = async (
-  studentId,
-) => {
-  return await orderRepository.findOrdersByStudentId(
-    studentId,
-  );
+const findStudentOrders = async (studentId) => {
+  return await orderRepository.findOrdersByStudentId(studentId);
 };
 
 // ============================================================
@@ -468,49 +353,23 @@ const findStudentOrders = async (
 const updatePrice = async (
   orderId,
   actor,
-  {
-    discountAmount,
-    discountPercentage,
-    finalAmount,
-    discountReason,
-  },
+  { discountAmount, discountPercentage, finalAmount, discountReason },
 ) => {
-  if (
-    ![
-      ROLES.ADMIN,
-      ROLES.SALES_AGENT,
-    ].includes(actor.role)
-  ) {
-    throw new ApiError(
-      403,
-      "Only admin or sales agent can edit order pricing",
-    );
+  if (![ROLES.ADMIN, ROLES.SALES_AGENT].includes(actor.role)) {
+    throw new ApiError(403, "Only admin or sales agent can edit order pricing");
   }
 
-  const order =
-    await orderRepository.findById(
-      orderId,
-    );
+  const order = await orderRepository.findById(orderId);
 
   if (!order) {
-    throw new ApiError(
-      404,
-      "Order not found",
-    );
+    throw new ApiError(404, "Order not found");
   }
 
-  if (
-    order.status !==
-    ORDER_STATUS.AWAITING_PAYMENT
-  ) {
-    throw new ApiError(
-      400,
-      "Price can only be changed before payment",
-    );
+  if (order.status !== ORDER_STATUS.AWAITING_PAYMENT) {
+    throw new ApiError(400, "Price can only be changed before payment");
   }
 
-  const calculatedAmount =
-    order.pricing.calculatedAmount;
+  const calculatedAmount = order.pricing.calculatedAmount;
 
   const providedOptions = [
     discountAmount !== undefined,
@@ -519,94 +378,50 @@ const updatePrice = async (
   ].filter(Boolean).length;
 
   if (providedOptions !== 1) {
-    throw new ApiError(
-      400,
-      "Provide exactly one pricing modification",
-    );
+    throw new ApiError(400, "Provide exactly one pricing modification");
   }
 
   let newDiscountAmount = 0;
 
   let newDiscountPercentage = 0;
 
-  let newFinalAmount =
-    calculatedAmount;
+  let newFinalAmount = calculatedAmount;
 
   // ----------------------------------------------------------
   // Discount amount
   // ----------------------------------------------------------
 
   if (discountAmount !== undefined) {
-    if (
-      discountAmount < 0 ||
-      discountAmount > calculatedAmount
-    ) {
-      throw new ApiError(
-        400,
-        "Invalid discount amount",
-      );
+    if (discountAmount < 0 || discountAmount > calculatedAmount) {
+      throw new ApiError(400, "Invalid discount amount");
     }
 
-    newDiscountAmount =
-      Number(discountAmount.toFixed(2));
+    newDiscountAmount = Number(discountAmount.toFixed(2));
 
-    newFinalAmount =
-      Number(
-        (
-          calculatedAmount -
-          newDiscountAmount
-        ).toFixed(2),
-      );
+    newFinalAmount = Number((calculatedAmount - newDiscountAmount).toFixed(2));
 
     newDiscountPercentage =
       calculatedAmount === 0
         ? 0
-        : Number(
-            (
-              (newDiscountAmount /
-                calculatedAmount) *
-              100
-            ).toFixed(2),
-          );
+        : Number(((newDiscountAmount / calculatedAmount) * 100).toFixed(2));
   }
 
   // ----------------------------------------------------------
   // Discount percentage
   // ----------------------------------------------------------
 
-  if (
-    discountPercentage !== undefined
-  ) {
-    if (
-      discountPercentage < 0 ||
-      discountPercentage > 100
-    ) {
-      throw new ApiError(
-        400,
-        "Discount percentage must be between 0 and 100",
-      );
+  if (discountPercentage !== undefined) {
+    if (discountPercentage < 0 || discountPercentage > 100) {
+      throw new ApiError(400, "Discount percentage must be between 0 and 100");
     }
 
-    newDiscountPercentage =
-      Number(
-        discountPercentage.toFixed(2),
-      );
+    newDiscountPercentage = Number(discountPercentage.toFixed(2));
 
-    newDiscountAmount =
-      Number(
-        (
-          calculatedAmount *
-          (newDiscountPercentage / 100)
-        ).toFixed(2),
-      );
+    newDiscountAmount = Number(
+      (calculatedAmount * (newDiscountPercentage / 100)).toFixed(2),
+    );
 
-    newFinalAmount =
-      Number(
-        (
-          calculatedAmount -
-          newDiscountAmount
-        ).toFixed(2),
-      );
+    newFinalAmount = Number((calculatedAmount - newDiscountAmount).toFixed(2));
   }
 
   // ----------------------------------------------------------
@@ -614,51 +429,29 @@ const updatePrice = async (
   // ----------------------------------------------------------
 
   if (finalAmount !== undefined) {
-    if (
-      finalAmount < 0 ||
-      finalAmount > calculatedAmount
-    ) {
-      throw new ApiError(
-        400,
-        "Final amount cannot exceed calculated price",
-      );
+    if (finalAmount < 0 || finalAmount > calculatedAmount) {
+      throw new ApiError(400, "Final amount cannot exceed calculated price");
     }
 
-    newFinalAmount =
-      Number(finalAmount.toFixed(2));
+    newFinalAmount = Number(finalAmount.toFixed(2));
 
-    newDiscountAmount =
-      Number(
-        (
-          calculatedAmount -
-          newFinalAmount
-        ).toFixed(2),
-      );
+    newDiscountAmount = Number((calculatedAmount - newFinalAmount).toFixed(2));
 
     newDiscountPercentage =
       calculatedAmount === 0
         ? 0
-        : Number(
-            (
-              (newDiscountAmount /
-                calculatedAmount) *
-              100
-            ).toFixed(2),
-          );
+        : Number(((newDiscountAmount / calculatedAmount) * 100).toFixed(2));
   }
 
   // ----------------------------------------------------------
   // Update pricing
   // ----------------------------------------------------------
 
-  order.pricing.discountAmount =
-    newDiscountAmount;
+  order.pricing.discountAmount = newDiscountAmount;
 
-  order.pricing.discountPercentage =
-    newDiscountPercentage;
+  order.pricing.discountPercentage = newDiscountPercentage;
 
-  order.pricing.finalAmount =
-    newFinalAmount;
+  order.pricing.finalAmount = newFinalAmount;
 
   // IMPORTANT:
   //
@@ -668,20 +461,16 @@ const updatePrice = async (
   //
   // $69.55 -> 6955
   //
-  order.pricing.amountInSubunits =
-    toSubunit(
-      newFinalAmount,
-      order.pricing.subunitFactor,
-    );
+  order.pricing.amountInSubunits = toSubunit(
+    newFinalAmount,
+    order.pricing.subunitFactor,
+  );
 
-  order.pricing.discountReason =
-    discountReason || "";
+  order.pricing.discountReason = discountReason || "";
 
-  order.pricing.priceEditedBy =
-    actor.userId;
+  order.pricing.priceEditedBy = actor.userId;
 
-  order.pricing.priceEditedAt =
-    new Date();
+  order.pricing.priceEditedAt = new Date();
 
   order.pricing.priceVersion += 1;
 
@@ -697,25 +486,19 @@ const updatePrice = async (
     action: "priceUpdated",
 
     metadata: {
-      oldAmount:
-        calculatedAmount,
+      oldAmount: calculatedAmount,
 
-      discountAmount:
-        newDiscountAmount,
+      discountAmount: newDiscountAmount,
 
-      discountPercentage:
-        newDiscountPercentage,
+      discountPercentage: newDiscountPercentage,
 
       newFinalAmount,
 
-      amountInSubunits:
-        order.pricing.amountInSubunits,
+      amountInSubunits: order.pricing.amountInSubunits,
 
-      currency:
-        order.pricing.currency,
+      currency: order.pricing.currency,
 
-      reason:
-        discountReason || null,
+      reason: discountReason || null,
     },
   });
 
@@ -729,7 +512,7 @@ const updatePrice = async (
 module.exports = {
   createOrder,
 
-  updateOrderPricing,
+  updateOrder,
 
   confirmOrder,
 

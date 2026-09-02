@@ -13,7 +13,7 @@ const ROLES = require("../constants/roles");
 const {
   createOrderValidator,
   orderIdValidator,
-  updateOrderPricingValidator,
+  updateOrderValidator,
   updatePriceValidator,
 } = require("../validators/order.validator");
 
@@ -37,24 +37,17 @@ router.post(
   controller.createOrder,
 );
 
-// ============================================================
-// STUDENT CHANGE PRICING INPUTS
-// ============================================================
-
+//=======================================================
+//STUDENT EDIT ORDER  INPUTS
+//=======================================================
 router.patch(
-  "/:orderId/pricing",
-
+  "/:orderId",
   authenticate,
-
   authorize(ROLES.STUDENT),
-
-  updateOrderPricingValidator,
-
+  updateOrderValidator,
   validate,
-
-  controller.updateOrderPricing,
+  controller.updateOrder,
 );
-
 // ============================================================
 // STUDENT CONFIRM ORDER
 // ============================================================
@@ -78,7 +71,7 @@ router.get(
   "/my-orders",
   authenticate,
   authorize(ROLES.STUDENT),
-  controller.getMyOrders
+  controller.getMyOrders,
 );
 
 // ============================================================
@@ -93,8 +86,6 @@ router.get(
   validate,
   controller.getStudentOrder,
 );
-
-
 
 // ============================================================
 // ADMIN / SALES AGENT EDIT PRICE
@@ -113,7 +104,5 @@ router.patch(
 
   controller.updatePrice,
 );
-
-
 
 module.exports = router;

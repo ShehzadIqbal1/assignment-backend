@@ -171,61 +171,96 @@ const orderIdValidator = [
 // ============================================================
 //
 // Student can update:
-//
-// - deadline
-// - numberOfPages
-// - lineSpacing
-// - addOns
-//
+//Complete order inputs 
 // Backend recalculates price.
 //
 // ============================================================
 
-const updateOrderPricingValidator = [
+const updateOrderValidator = [
   ...orderIdValidator,
+
+  body("assignmentType")
+    .optional()
+    .trim()
+    .notEmpty(),
+
+  body("academicLevel")
+    .optional()
+    .trim()
+    .notEmpty(),
+
+  body("subject")
+    .optional()
+    .trim()
+    .notEmpty(),
+
+  body("title")
+    .optional()
+    .trim()
+    .isLength({
+      max:500
+    }),
 
   body("deadline")
     .optional()
     .trim()
-    .notEmpty()
-    .withMessage(
-      "Deadline cannot be empty",
-    ),
+    .notEmpty(),
 
   body("numberOfPages")
     .optional()
     .isInt({
-      min: 1,
-    })
-    .withMessage(
-      "Number of pages must be at least 1",
-    ),
+      min:1
+    }),
+
+  body("wordCount")
+    .optional()
+    .isInt({
+      min:0
+    }),
 
   body("lineSpacing")
     .optional()
     .isIn([
       "single",
-      "double",
-    ])
-    .withMessage(
-      "Line spacing must be single or double",
-    ),
+      "double"
+    ]),
+
+  body("guidelines")
+    .optional()
+    .trim(),
+
+  body("citationStyle")
+    .optional()
+    .trim(),
+
+  body("references")
+    .optional()
+    .isInt({
+      min:0
+    }),
+
+  body("fontStyle")
+    .optional()
+    .trim(),
+
+  body("language")
+    .optional()
+    .trim(),
 
   body("addOns")
     .optional()
-    .isArray()
-    .withMessage(
-      "Add-ons must be an array",
-    ),
+    .isArray(),
 
   body("addOns.*")
+    .optional()
     .isString()
     .trim()
-    .notEmpty()
-    .withMessage(
-      "Each add-on must be a valid name",
-    ),
 ];
+
+
+module.exports = {
+ updateOrderValidator
+};
 
 // ============================================================
 // ADMIN / SALES AGENT PRICE UPDATE
@@ -290,7 +325,7 @@ module.exports = {
 
   orderIdValidator,
 
-  updateOrderPricingValidator,
+  updateOrderValidator,
 
   updatePriceValidator,
 };

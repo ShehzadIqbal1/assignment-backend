@@ -24,29 +24,32 @@ const createOrder = asyncHandler(async (req, res) => {
 });
 
 // ============================================================
-// UPDATE ORDER PRICING INPUTS
-// Student changes deadline/pages/line spacing
+// UPDATE ORDER  INPUTS
+// Student can update complete order inputs
 // Backend recalculates the price
 // ============================================================
 
-const updateOrderPricing = asyncHandler(async (req, res) => {
-  const order = await orderService.updateOrderPricing(
+const updateOrder = asyncHandler(async(req,res)=>{
+
+ const order = await orderService.updateOrder(
     req.params.orderId,
     req.user.userId,
     req.body
-  );
+ );
 
-  return res.status(200).json({
-    success: true,
+ return res.status(200).json({
 
-    message: "Order pricing updated successfully",
+    success:true,
 
-    data: {
-      order,
-    },
-  });
+    message:"Order updated successfully",
+
+    data:{
+       order
+    }
+
+ });
+
 });
-
 // ============================================================
 // CONFIRM ORDER
 // ============================================================
@@ -133,7 +136,7 @@ const updatePrice = asyncHandler(async (req, res) => {
 
 module.exports = {
   createOrder,
-  updateOrderPricing,
+  updateOrder,
   confirmOrder,
   getStudentOrder,
   getMyOrders,
