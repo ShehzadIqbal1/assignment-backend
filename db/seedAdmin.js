@@ -3,6 +3,8 @@ const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 const ROLES = require("../constants/roles");
 
+const STAFF_TAG = "system";
+
 const seedAdmin = async () => {
   try {
     const adminEmail = process.env.DEFAULT_ADMIN_EMAIL;
@@ -21,7 +23,15 @@ const seedAdmin = async () => {
     });
 
     if (existingAdmin) {
-      console.log(`Default admin already exists: ${existingAdmin.email}`);
+      if (!existingAdmin.tag) {
+        existingAdmin.tag = STAFF_TAG;
+        await existingAdmin.save();
+        console.log(
+          `Default admin tag backfilled: ${existingAdmin.email} (${STAFF_TAG})`,
+        );
+      } else {
+        console.log(`Default admin already exists: ${existingAdmin.email}`);
+      }
 
       return existingAdmin;
     }
@@ -38,6 +48,8 @@ const seedAdmin = async () => {
       phoneNumber: process.env.DEFAULT_ADMIN_PHONE || "0000000000",
 
       password: hashedPassword,
+
+      tag: STAFF_TAG,
 
       role: ROLES.ADMIN,
 
