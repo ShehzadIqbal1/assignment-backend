@@ -1,5 +1,3 @@
-const bcrypt = require("bcryptjs");
-
 const User = require("../models/User");
 const Order = require("../models/Order");
 const Payment = require("../models/Payment");
@@ -191,33 +189,35 @@ const getStats = async (actor) => {
 // STAFF (ADMIN ONLY)
 // ============================================================
 
-const 
-createStaff = async (actor, data) => {
+const createStaff = async (actor, data) => {
   if (actor.role !== ROLES.ADMIN) {
     throw new ApiError(403, "Only admin can create staff");
   }
-
   const { fullName, email, countryCode, phoneNumber, password, role } = data;
 
   if (!STAFF_ROLES.includes(role)) {
-    throw new ApiError(400, "Role must be salesAgent, writer, or writerManager");
+    throw new ApiError(
+      400,
+      "Role must be salesAgent, writer, or writerManager",
+    );
   }
 
   const normalizedEmail = email.trim().toLowerCase();
-  const existing = await User.findOne({ email: normalizedEmail });
+
+  const existing = await User.findOne({
+    email: normalizedEmail,
+  });
 
   if (existing) {
     throw new ApiError(409, "Email is already registered");
   }
-
-  const passwordHash = await bcrypt.hash(password, 12);
 
   const user = await User.create({
     fullName: fullName.trim(),
     email: normalizedEmail,
     countryCode: countryCode.trim(),
     phoneNumber: phoneNumber.trim(),
-    password: passwordHash,
+    password,
     tag: STAFF_TAG,
     role,
     isActive: true,
@@ -226,8 +226,10 @@ createStaff = async (actor, data) => {
 
   return buildUserResponse(user);
 };
-
-const listStaff = async (actor, { role, search, page = 1, limit = 20 } = {}) => {
+const listStaff = async (
+  actor,
+  { role, search, page = 1, limit = 20 } = {},
+) => {
   if (actor.role !== ROLES.ADMIN) {
     throw new ApiError(403, "Only admin can list staff");
   }
@@ -314,7 +316,10 @@ const updateStaffRole = async (actor, userId, role) => {
   }
 
   if (!STAFF_ROLES.includes(role)) {
-    throw new ApiError(400, "Role must be salesAgent, writer, or writerManager");
+    throw new ApiError(
+      400,
+      "Role must be salesAgent, writer, or writerManager",
+    );
   }
 
   const user = await User.findById(userId);
@@ -324,7 +329,10 @@ const updateStaffRole = async (actor, userId, role) => {
   }
 
   if (!STAFF_ROLES.includes(user.role)) {
-    throw new ApiError(400, "Only staff members can have their role changed here");
+    throw new ApiError(
+      400,
+      "Only staff members can have their role changed here",
+    );
   }
 
   user.role = role;

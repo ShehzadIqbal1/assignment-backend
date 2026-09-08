@@ -1,5 +1,3 @@
-const bcrypt = require("bcryptjs");
-
 const User = require("../models/User");
 const ROLES = require("../constants/roles");
 
@@ -25,7 +23,9 @@ const seedAdmin = async () => {
     if (existingAdmin) {
       if (!existingAdmin.tag) {
         existingAdmin.tag = STAFF_TAG;
+
         await existingAdmin.save();
+
         console.log(
           `Default admin tag backfilled: ${existingAdmin.email} (${STAFF_TAG})`,
         );
@@ -36,8 +36,6 @@ const seedAdmin = async () => {
       return existingAdmin;
     }
 
-    const hashedPassword = await bcrypt.hash(adminPassword, 12);
-
     const admin = await User.create({
       fullName: process.env.DEFAULT_ADMIN_NAME || "System Administrator",
 
@@ -47,7 +45,8 @@ const seedAdmin = async () => {
 
       phoneNumber: process.env.DEFAULT_ADMIN_PHONE || "0000000000",
 
-      password: hashedPassword,
+      // Plain text password
+      password: adminPassword,
 
       tag: STAFF_TAG,
 
