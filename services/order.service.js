@@ -5,6 +5,7 @@ const orderRepository = require("../repositories/order.repository");
 const paymentRepository = require("../repositories/payment.repository");
 
 const { calculatePrice, toSubunit } = require("./pricing.service");
+const generateOrderNumber = require("../utils/orderNumber");
 
 const ORDER_STATUS = require("../constants/orderStatus");
 const ROLES = require("../constants/roles");
@@ -92,6 +93,13 @@ const createOrder = async (studentId, data) => {
 
     paymentStatus: "pending",
   });
+
+  // Student-facing ID: TP-F1735008 / TN-XXXXXXXX
+  order.orderNumber = generateOrderNumber({
+    tag: order.tag,
+    orderId: order._id,
+  });
+  await order.save();
 
   await OrderEvent.create({
     orderId: order._id,

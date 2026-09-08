@@ -6,7 +6,7 @@ const Payment = require("../models/Payment");
 
 const OrderEvent = require("../models/OrderEvent");
 
-const getPaymentProvider = require("./payment/paymentProvider");
+const getPaymentProvider = require("./payment/payment.provider");
 
 const ORDER_STATUS = require("../constants/orderStatus");
 

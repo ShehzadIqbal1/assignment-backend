@@ -8,6 +8,7 @@ const orderRoutes = require("./routes/order.routes");
 const paymentRoutes = require("./routes/payment.routes");
 const siteRoutes = require("./routes/site.routes");
 const contactRoutes = require("./routes/contact.routes");
+const adminRoutes = require("./routes/admin.routes");
 const paymentController = require("./controllers/payment.controller");
 const notFound = require("./middleware/notFound.middleware");
 const errorHandler = require("./middleware/error.middleware");
@@ -17,13 +18,20 @@ const app = express();
 // SECURITY
 // ============================================================
 
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  }),
+);
 
 // ============================================================
 // CORS
 // ============================================================
 
-const allowedOrigins = process.env.CLIENT_URLS.split(",");
+const allowedOrigins = (process.env.CLIENT_URLS || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 app.use(
   cors({
@@ -118,6 +126,12 @@ app.use("/api/v1/payments", paymentRoutes);
 app.use("/api/v1/site", siteRoutes);
 
 app.use("/api/v1/contact", contactRoutes);
+
+// ============================================================
+// PANEL (admin / sales / writer / writer manager) — same User login, role-filtered
+// ============================================================
+
+app.use("/api/v1/admin", adminRoutes);
 
 // ============================================================
 // 404

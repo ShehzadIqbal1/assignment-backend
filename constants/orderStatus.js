@@ -1,23 +1,27 @@
 const ORDER_STATUS = {
-    DRAFT: "draft",
+  DRAFT: "draft",
 
-    AWAITING_PAYMENT: "awaitingPayment",
+  AWAITING_PAYMENT: "awaitingPayment",
 
-    PAID: "paid",
+  PAID: "paid",
 
-    WRITER_ASSIGNED: "writerAssigned",
+  DETAILS_MISSING: "detailsMissing",
 
-    IN_PROGRESS: "inProgress",
+  DETAILS_APPROVED: "detailsApproved",
 
-    SUBMITTED: "submitted",
+  WRITER_ASSIGNED: "writerAssigned",
 
-    REVISION_REQUESTED: "revisionRequested",
+  IN_PROGRESS: "inProgress",
 
-    COMPLETED: "completed",
+  SUBMITTED: "submitted",
 
-    CANCELLED: "cancelled",
+  REVISION_REQUESTED: "revisionRequested",
 
-    REFUNDED: "refunded"
+  COMPLETED: "completed",
+
+  CANCELLED: "cancelled",
+
+  REFUNDED: "refunded",
 };
 
 module.exports = ORDER_STATUS;
