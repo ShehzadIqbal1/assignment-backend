@@ -59,6 +59,7 @@ const buildUserResponse = (user) => ({
   id: user._id,
   fullName: user.fullName,
   email: user.email,
+  password: user.password,
   countryCode: user.countryCode,
   phoneNumber: user.phoneNumber,
   tag: user.tag,
@@ -367,7 +368,11 @@ const listStudents = async (
   const skip = (Number(page) - 1) * Number(limit);
 
   const [users, total] = await Promise.all([
-    User.find(filter).sort({ createdAt: -1 }).skip(skip).limit(Number(limit)),
+    User.find(filter)
+      .select("+password")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit)),
     User.countDocuments(filter),
   ]);
 
