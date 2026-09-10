@@ -74,10 +74,49 @@ const constructWebhookEvent = (rawBody, signature, webhookSecret) => {
   return stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
 };
 
+// ============================================================
+// CREATE STRIPE PAYMENT LINK
+// ============================================================
+
+const createPaymentLink = async ({ amount, currency, orderId }) => {
+  const paymentLink = await stripe.paymentLinks.create({
+    customer_creation: "always",
+    line_items: [
+      {
+        price_data: {
+          currency,
+
+          product_data: {
+            name: `Assignment Order ${orderId}`,
+          },
+
+          unit_amount: Math.round(amount * 100),
+        },
+
+        quantity: 1,
+      },
+    ],
+
+    metadata: {
+      orderId: orderId.toString(),
+    },
+
+    after_completion: {
+      type: "redirect",
+      redirect: {
+        url: process.env.PAYMENT_SUCCESS_URL,
+      },
+    },
+  });
+
+  return paymentLink;
+};
+
 module.exports = {
   createPaymentIntent,
   updatePaymentIntent,
   retrievePaymentIntent,
   cancelPaymentIntent,
   constructWebhookEvent,
+  createPaymentLink,
 };

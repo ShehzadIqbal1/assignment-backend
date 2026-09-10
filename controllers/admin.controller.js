@@ -124,6 +124,57 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
   });
 });
 
+//
+const createStudent = asyncHandler(async (req, res) => {
+  const user = await adminService.createStudent(req.user, req.body);
+
+  return res.status(201).json({
+    success: true,
+    message: "Student created successfully",
+    data: { user },
+  });
+});
+
+const getStudentDetail = asyncHandler(async (req, res) => {
+  const result = await adminService.getStudentDetail(
+    req.user,
+    req.params.userId,
+  );
+
+  return res.status(200).json({
+    success: true,
+    data: result,
+  });
+});
+
+const updateStudent = asyncHandler(async (req, res) => {
+  const user = await adminService.updateStudent(
+    req.user,
+    req.params.userId,
+    req.body,
+  );
+
+  return res.status(200).json({
+    success: true,
+    message: "Student updated successfully",
+    data: { user },
+  });
+});
+
+const updateStudentStatus = asyncHandler(async (req, res) => {
+  const user = await adminService.updateStudentStatus(
+    req.user,
+    req.params.userId,
+    req.body.isActive,
+  );
+
+  return res.status(200).json({
+    success: true,
+    message: "Student status updated",
+    data: { user },
+  });
+});
+
 module.exports = {
   getStats,
   createStaff,
@@ -136,4 +187,8 @@ module.exports = {
   getOrderDetail,
   assignWriter,
   updateOrderStatus,
+  createStudent,
+  getStudentDetail,
+  updateStudent,
+  updateStudentStatus,
 };

@@ -92,6 +92,103 @@ const listOrdersQueryValidator = [
   query("search").optional().trim().isLength({ max: 200 }),
 ];
 
+//
+const createStudentValidator = [
+  body("fullName")
+    .trim()
+    .notEmpty()
+    .withMessage("Full name is required")
+    .isLength({ min: 2, max: 100 }),
+
+  body("email")
+    .trim()
+    .notEmpty()
+    .withMessage("Email is required")
+    .isEmail()
+    .withMessage("Please provide a valid email")
+    .normalizeEmail(),
+
+  body("countryCode")
+    .trim()
+    .notEmpty()
+    .withMessage("Country code is required")
+    .matches(/^\+\d{1,4}$/)
+    .withMessage("Invalid country code"),
+
+  body("phoneNumber")
+    .trim()
+    .notEmpty()
+    .withMessage("Phone number is required")
+    .matches(/^\d{6,20}$/)
+    .withMessage("Please provide a valid phone number"),
+
+  body("password")
+    .notEmpty()
+    .withMessage("Password is required")
+    .isLength({ min: 8 })
+    .withMessage("Password must contain at least 8 characters"),
+
+  body("tag")
+    .optional()
+    .trim()
+    .toLowerCase()
+    .isIn(["tutorspath", "tutorsnext"])
+    .withMessage("Tag must be tutorspath or tutorsnext"),
+];
+
+const updateStudentValidator = [
+  ...userIdValidator,
+
+  body("fullName")
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage("Full name cannot be empty")
+    .isLength({ min: 2, max: 100 }),
+
+  body("email")
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage("Email cannot be empty")
+    .isEmail()
+    .withMessage("Please provide a valid email")
+    .normalizeEmail(),
+
+  body("countryCode")
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage("Country code cannot be empty")
+    .matches(/^\+\d{1,4}$/)
+    .withMessage("Invalid country code"),
+
+  body("phoneNumber")
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage("Phone number cannot be empty")
+    .matches(/^\d{6,20}$/)
+    .withMessage("Please provide a valid phone number"),
+
+  body("password")
+    .optional({ values: "falsy" })
+    .isLength({ min: 8 })
+    .withMessage("Password must contain at least 8 characters"),
+
+  body("tag")
+    .optional()
+    .trim()
+    .toLowerCase()
+    .isIn(["tutorspath", "tutorsnext"])
+    .withMessage("Tag must be tutorspath or tutorsnext"),
+];
+
+const updateStudentStatusValidator = [
+  ...userIdValidator,
+  body("isActive").isBoolean().withMessage("isActive must be a boolean"),
+];
+
 module.exports = {
   createStaffValidator,
   updateStaffStatusValidator,
@@ -100,4 +197,8 @@ module.exports = {
   assignWriterValidator,
   updateStatusValidator,
   listOrdersQueryValidator,
+  createStudentValidator,
+  userIdValidator,
+  updateStudentValidator,
+  updateStudentStatusValidator,
 };

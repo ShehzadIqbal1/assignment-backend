@@ -50,7 +50,36 @@ const stripeWebhook = asyncHandler(async (req, res) => {
   });
 });
 
+const generatePaymentLink = asyncHandler(
+async(req,res)=>{
+
+
+const result =
+await paymentService.createOrderPaymentLink({
+
+orderId:req.params.orderId,
+
+actorId:req.user.userId
+
+});
+
+
+return res.status(200).json({
+
+success:true,
+
+message:
+"Payment link generated successfully",
+
+data:result
+
+});
+
+
+});
+
 module.exports = {
   createPaymentIntent,
   stripeWebhook,
+  generatePaymentLink,
 };

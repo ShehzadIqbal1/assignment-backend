@@ -34,4 +34,12 @@ router.post(
   controller.createPaymentIntent,
 );
 
+router.post(
+  "/orders/:orderId/payment-link",
+  authenticate,
+  authorize(ROLES.ADMIN, ROLES.SALES_AGENT),
+  validate,
+  controller.generatePaymentLink,
+);
+
 module.exports = router;

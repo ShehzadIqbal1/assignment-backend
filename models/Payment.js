@@ -1,83 +1,119 @@
 const mongoose = require("mongoose");
 
 const paymentSchema = new mongoose.Schema(
-  {
-    orderId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Order",
-      required: true,
-      index: true,
+{
+  orderId:{
+    type:mongoose.Schema.Types.ObjectId,
+    ref:"Order",
+    required:true,
+    index:true,
+  },
+
+  studentId:{
+    type:mongoose.Schema.Types.ObjectId,
+    ref:"User",
+    required:true,
+    index:true,
+  },
+
+
+  provider:{
+    type:String,
+    required:true,
+    enum:["stripe"],
+  },
+
+
+  providerPaymentId:{
+    type:String,
+    required:true,
+    unique:true,
+    index:true,
+  },
+
+
+  // payment link information
+
+  paymentLink:{
+    url:{
+      type:String,
+      default:null,
     },
 
-    studentId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-      index: true,
+    stripePaymentLinkId:{
+      type:String,
+      default:null,
     },
 
-    provider: {
-      type: String,
-      required: true,
-      enum: ["stripe"],
+    expiresAt:{
+      type:Date,
+      default:null,
     },
 
-    providerPaymentId: {
-      type: String,
-      required: true,
-      unique: true,
-      index: true,
+    generatedBy:{
+      type:mongoose.Schema.Types.ObjectId,
+      ref:"User",
+      default:null,
     },
 
-    amount: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
-
-    currency: {
-      type: String,
-      default: "usd",
-    },
-
-    status: {
-      type: String,
-      enum: [
-        "requiresPaymentMethod",
-        "requiresAction",
-        "processing",
-        "succeeded",
-        "failed",
-        "cancelled",
-        "refunded",
-      ],
-      required: true,
-    },
-
-    paidAt: {
-      type: Date,
-      default: null,
-    },
-
-    failureReason: {
-      type: String,
-      default: null,
+    generatedAt:{
+      type:Date,
+      default:null,
     },
   },
 
-  {
-    timestamps: true,
-  },
-);
 
-paymentSchema.index(
-  {
-    orderId: 1,
-    provider: 1,
+  amount:{
+    type:Number,
+    required:true,
+    min:0,
   },
-  {
-    unique: true,
-  },
-);
 
-module.exports = mongoose.model("Payment", paymentSchema);
+
+  currency:{
+    type:String,
+    default:"usd",
+  },
+
+
+  status:{
+    type:String,
+    enum:[
+      "requiresPaymentMethod",
+      "requiresAction",
+      "processing",
+      "succeeded",
+      "failed",
+      "cancelled",
+      "refunded",
+    ],
+    required:true,
+  },
+
+
+  paidAt:{
+    type:Date,
+    default:null,
+  },
+
+
+  failureReason:{
+    type:String,
+    default:null,
+  },
+
+},
+{
+ timestamps:true,
+});
+
+
+paymentSchema.index({
+ orderId:1,
+ provider:1,
+},{
+ unique:true
+});
+
+
+module.exports = mongoose.model("Payment",paymentSchema);

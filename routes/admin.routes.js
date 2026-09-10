@@ -14,6 +14,10 @@ const {
   assignWriterValidator,
   updateStatusValidator,
   listOrdersQueryValidator,
+  createStudentValidator,
+  userIdValidator,
+  updateStudentValidator,
+  updateStudentStatusValidator,
 } = require("../validators/admin.validator");
 
 const router = express.Router();
@@ -97,6 +101,39 @@ router.patch(
   updateStatusValidator,
   validate,
   controller.updateOrderStatus,
+);
+
+//
+router.post(
+  "/students",
+  authorize(ROLES.ADMIN, ROLES.SALES_AGENT),
+  createStudentValidator,
+  validate,
+  controller.createStudent,
+);
+
+router.get(
+  "/students/:userId",
+  authorize(ROLES.ADMIN, ROLES.SALES_AGENT),
+  userIdValidator,
+  validate,
+  controller.getStudentDetail,
+);
+
+router.patch(
+  "/students/:userId",
+  authorize(ROLES.ADMIN, ROLES.SALES_AGENT),
+  updateStudentValidator,
+  validate,
+  controller.updateStudent,
+);
+
+router.patch(
+  "/students/:userId/status",
+  authorize(ROLES.ADMIN, ROLES.SALES_AGENT),
+  updateStudentStatusValidator,
+  validate,
+  controller.updateStudentStatus,
 );
 
 module.exports = router;

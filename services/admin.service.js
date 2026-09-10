@@ -708,6 +708,167 @@ const updateOrderStatus = async (actor, orderId, status) => {
     .populate("currentWriterId", "fullName email phoneNumber");
 };
 
+/////
+const assertStudentManager = (actor) => {
+  if (![ROLES.ADMIN, ROLES.SALES_AGENT].includes(actor.role)) {
+    throw new ApiError(403, "Access denied");
+  }
+};
+
+const findStudentOrFail = async (userId) => {
+  const user = await User.findOne({
+    _id: userId,
+    role: ROLES.STUDENT,
+  }).select("+password");
+
+  if (!user) {
+    throw new ApiError(404, "Student not found");
+  }
+
+  return user;
+};
+
+const createStudent = async (actor, data) => {
+  assertStudentManager(actor);
+
+  const {
+    fullName,
+    email,
+    countryCode,
+    phoneNumber,
+    password,
+    tag = "tutorspath",
+  } = data;
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const normalizedTag = String(tag).trim().toLowerCase();
+
+  if (!["tutorspath", "tutorsnext"].includes(normalizedTag)) {
+    throw new ApiError(400, "Tag must be tutorspath or tutorsnext");
+  }
+
+  const existing = await User.findOne({ email: normalizedEmail });
+  if (existing) {
+    throw new ApiError(409, "Email is already registered");
+  }
+
+  try {
+    const user = await User.create({
+      fullName: fullName.trim(),
+      email: normalizedEmail,
+      countryCode: countryCode.trim(),
+      phoneNumber: phoneNumber.trim(),
+      password,
+      tag: normalizedTag,
+      role: ROLES.STUDENT,
+      isActive: true,
+      emailVerified: true,
+    });
+
+    return buildUserResponse(user);
+  } catch (error) {
+    if (error.code === 11000) {
+      throw new ApiError(409, "Email is already registered");
+    }
+    throw error;
+  }
+};
+
+const getStudentDetail = async (actor, userId) => {
+  assertStudentManager(actor);
+
+  const student = await findStudentOrFail(userId);
+
+  const orders = await Order.find({ studentId: student._id })
+    .sort({ createdAt: -1 })
+    .limit(50)
+    .select(
+      "orderNumber title tag status paymentStatus paymentMethod pricing createdAt updatedAt",
+    );
+
+  for (const order of orders) {
+    await ensureOrderNumber(order);
+  }
+
+  const payments = await Payment.find({ studentId: student._id })
+    .sort({ createdAt: -1 })
+    .limit(50)
+    .populate("orderId", "orderNumber title status paymentStatus");
+
+  return {
+    student: buildUserResponse(student),
+    orders,
+    payments,
+  };
+};
+
+const updateStudent = async (actor, userId, data) => {
+  assertStudentManager(actor);
+
+  const student = await findStudentOrFail(userId);
+
+  const { fullName, email, countryCode, phoneNumber, password, tag } = data;
+
+  if (fullName !== undefined) {
+    student.fullName = fullName.trim();
+  }
+
+  if (email !== undefined) {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (normalizedEmail !== student.email) {
+      const existing = await User.findOne({
+        email: normalizedEmail,
+        _id: { $ne: student._id },
+      });
+      if (existing) {
+        throw new ApiError(409, "Email is already registered");
+      }
+      student.email = normalizedEmail;
+    }
+  }
+
+  if (countryCode !== undefined) {
+    student.countryCode = countryCode.trim();
+  }
+
+  if (phoneNumber !== undefined) {
+    student.phoneNumber = phoneNumber.trim();
+  }
+
+  if (password !== undefined && password !== "") {
+    student.password = password;
+  }
+
+  if (tag !== undefined) {
+    const normalizedTag = String(tag).trim().toLowerCase();
+    if (!["tutorspath", "tutorsnext"].includes(normalizedTag)) {
+      throw new ApiError(400, "Tag must be tutorspath or tutorsnext");
+    }
+    student.tag = normalizedTag;
+  }
+
+  try {
+    await student.save();
+  } catch (error) {
+    if (error.code === 11000) {
+      throw new ApiError(409, "Email is already registered");
+    }
+    throw error;
+  }
+
+  return buildUserResponse(student);
+};
+
+const updateStudentStatus = async (actor, userId, isActive) => {
+  assertStudentManager(actor);
+
+  const student = await findStudentOrFail(userId);
+  student.isActive = Boolean(isActive);
+  await student.save();
+
+  return buildUserResponse(student);
+};
+
 module.exports = {
   getStats,
   createStaff,
@@ -715,6 +876,10 @@ module.exports = {
   listWriters,
   updateStaffStatus,
   updateStaffRole,
+  createStudent,
+  getStudentDetail,
+  updateStudent,
+  updateStudentStatus,
   listStudents,
   listOrders,
   getOrderDetail,

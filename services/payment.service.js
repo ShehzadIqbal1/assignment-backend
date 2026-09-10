@@ -232,6 +232,15 @@ const handleStripeWebhook = async (rawBody, signature) => {
   }
 
   // ----------------------------------------------------
+  // Checkout session completed
+  // ----------------------------------------------------
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object;
+
+    await markCheckoutPaymentSuccessful(session);
+  }
+
+  // ----------------------------------------------------
   // Payment failed
   // ----------------------------------------------------
 
@@ -322,22 +331,14 @@ const markPaymentSuccessful = async (paymentIntent) => {
 
   await OrderEvent.create({
     orderId: order._id,
-
     userId: order.studentId,
-
     role: "system",
-
     action: "paymentSucceeded",
-
     fromStatus: ORDER_STATUS.AWAITING_PAYMENT,
-
     toStatus: ORDER_STATUS.PAID,
-
     metadata: {
       provider: "stripe",
-
       paymentIntentId: paymentIntent.id,
-
       amount: paymentIntent.amount / 100,
     },
   });
@@ -377,18 +378,12 @@ const markPaymentFailed = async (paymentIntent) => {
 
   await OrderEvent.create({
     orderId: payment.orderId,
-
     userId: payment.studentId,
-
     role: "system",
-
     action: "paymentFailed",
-
     metadata: {
       provider: "stripe",
-
       paymentIntentId: paymentIntent.id,
-
       reason: payment.failureReason,
     },
   });
@@ -420,7 +415,135 @@ const mapStripeStatus = (status) => {
   }
 };
 
+const createOrderPaymentLink = async ({ orderId, actorId }) => {
+  const order = await Order.findById(orderId);
+
+  if (!order) {
+    throw new ApiError(404, "Order not found");
+  }
+
+  if (order.status !== ORDER_STATUS.AWAITING_PAYMENT) {
+    throw new ApiError(
+      400,
+      "Payment link can only be generated for awaiting payment orders",
+    );
+  }
+
+  if (order.paymentStatus === "paid") {
+    throw new ApiError(400, "Order already paid");
+  }
+
+  let payment = await Payment.findOne({
+    orderId,
+    provider: "stripe",
+  });
+
+  // reuse existing valid link
+
+  if (
+    payment?.paymentLink?.expiresAt &&
+    payment.paymentLink.expiresAt > new Date()
+  ) {
+    return {
+      url: payment.paymentLink.url,
+      expiresAt: payment.paymentLink.expiresAt,
+    };
+  }
+
+  const provider = getPaymentProvider("stripe");
+
+  const stripeLink = await provider.createPaymentLink({
+    amount: order.pricing.finalAmount,
+
+    currency: order.pricing.currency,
+
+    orderId: order._id,
+  });
+
+  if (!payment) {
+    payment = await Payment.create({
+      orderId: order._id,
+
+      studentId: order.studentId,
+
+      provider: "stripe",
+
+      providerPaymentId: stripeLink.id,
+
+      amount: order.pricing.finalAmount,
+
+      currency: order.pricing.currency,
+
+      status: "requiresPaymentMethod",
+    });
+  }
+
+  payment.paymentLink = {
+    url: stripeLink.url,
+
+    stripePaymentLinkId: stripeLink.id,
+
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+
+    generatedBy: actorId,
+
+    generatedAt: new Date(),
+  };
+
+  await payment.save();
+
+  return {
+    url: payment.paymentLink.url,
+
+    expiresAt: payment.paymentLink.expiresAt,
+  };
+};
+
+const markCheckoutPaymentSuccessful = async (session) => {
+  const orderId = session.metadata?.orderId;
+
+  if (!orderId) {
+    throw new Error("Checkout session missing orderId");
+  }
+
+  const order = await Order.findById(orderId);
+
+  if (!order) {
+    throw new Error("Order not found");
+  }
+
+  order.paymentStatus = "paid";
+
+  order.status = ORDER_STATUS.PAID;
+
+  order.paymentMethod = "stripe";
+
+  await order.save();
+
+  const payment = await Payment.findOne({
+    orderId,
+    provider: "stripe",
+  });
+
+  if (payment) {
+    payment.status = "succeeded";
+
+    payment.paidAt = new Date();
+
+    if (payment.paymentLink) {
+      payment.paymentLink.expiresAt = new Date();
+    }
+
+    await payment.save();
+  }
+};
+
 module.exports = {
   createPaymentIntent,
   handleStripeWebhook,
+  markPaymentSuccessful,
+  markPaymentFailed,
+  mapStripeStatus,
+  createOrderPaymentLink,
+  markCheckoutPaymentSuccessful,
 };
