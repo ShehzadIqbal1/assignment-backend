@@ -50,6 +50,8 @@ const seedAdmin = async () => {
 
       tag: STAFF_TAG,
 
+      tag: STAFF_TAG,
+
       role: ROLES.ADMIN,
 
       isActive: true,
