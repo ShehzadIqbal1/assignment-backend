@@ -1,0 +1,72 @@
+const User = require("../models/User");
+const ROLES = require("../constants/roles");
+
+const STAFF_TAG = "system";
+
+const seedAdmin = async () => {
+  try {
+    const adminEmail = process.env.DEFAULT_ADMIN_EMAIL;
+    const adminPassword = process.env.DEFAULT_ADMIN_PASSWORD;
+
+    if (!adminEmail) {
+      throw new Error("DEFAULT_ADMIN_EMAIL is missing from .env");
+    }
+
+    if (!adminPassword) {
+      throw new Error("DEFAULT_ADMIN_PASSWORD is missing from .env");
+    }
+
+    const existingAdmin = await User.findOne({
+      email: adminEmail.toLowerCase(),
+    });
+
+    if (existingAdmin) {
+      if (!existingAdmin.tag) {
+        existingAdmin.tag = STAFF_TAG;
+
+        await existingAdmin.save();
+
+        console.log(
+          `Default admin tag backfilled: ${existingAdmin.email} (${STAFF_TAG})`,
+        );
+      } else {
+        console.log(`Default admin already exists: ${existingAdmin.email}`);
+      }
+
+      return existingAdmin;
+    }
+
+    const admin = await User.create({
+      fullName: process.env.DEFAULT_ADMIN_NAME || "System Administrator",
+
+      email: adminEmail.toLowerCase(),
+
+      countryCode: process.env.DEFAULT_ADMIN_COUNTRY_CODE || "+1",
+
+      phoneNumber: process.env.DEFAULT_ADMIN_PHONE || "0000000000",
+
+      // Plain text password
+      password: adminPassword,
+
+      tag: STAFF_TAG,
+
+      tag: STAFF_TAG,
+
+      role: ROLES.ADMIN,
+
+      isActive: true,
+
+      emailVerified: true,
+    });
+
+    console.log(`Default admin created: ${admin.email}`);
+
+    return admin;
+  } catch (error) {
+    console.error("Default admin seed failed:", error.message);
+
+    throw error;
+  }
+};
+
+module.exports = seedAdmin;
