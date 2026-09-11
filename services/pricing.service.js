@@ -75,6 +75,33 @@ const WEBSITE_PRICING = {
       "Quality Double-check": 3.17,
     },
   },
+
+  tutorspie: {
+    currency: "usd",
+
+    subunitFactor: 100,
+
+    deadlineRates: {
+      "15 days": 8.0,
+      "10 days": 9.2,
+      "7 days": 9.25,
+      "5 days": 9.3,
+      "4 days": 10.1,
+      "3 days": 10.15,
+      "2 days": 11.15,
+      "24 hours": 12.0,
+      "12 hours": 12.85,
+      "6 hours": 14.65,
+      "3 hours": 14.7,
+    },
+
+    addons: {
+      "Grammar Check Report": 5.75,
+      "One Page Summary": 14.7,
+      "Abstract Page": 14.7,
+      "Quality Double-check": 2.92,
+    },
+  },
 };
 
 // ============================================================
@@ -190,13 +217,10 @@ const calculatePrice = ({
   // Validate line spacing
   // ----------------------------------------------------------
 
-  const lineSpacingMultiplier =
-    LINE_SPACING_MULTIPLIERS[lineSpacing];
+  const lineSpacingMultiplier = LINE_SPACING_MULTIPLIERS[lineSpacing];
 
   if (lineSpacingMultiplier === undefined) {
-    throw new Error(
-      `Invalid line spacing: ${lineSpacing}`,
-    );
+    throw new Error(`Invalid line spacing: ${lineSpacing}`);
   }
 
   // ----------------------------------------------------------
@@ -216,9 +240,7 @@ const calculatePrice = ({
   // ----------------------------------------------------------
 
   const assignmentAmount = roundMoney(
-    deadlineRate *
-      lineSpacingMultiplier *
-      pages,
+    deadlineRate * lineSpacingMultiplier * pages,
   );
 
   // ----------------------------------------------------------
@@ -231,21 +253,16 @@ const calculatePrice = ({
 
   for (const addOnName of addOns) {
     if (typeof addOnName !== "string") {
-      throw new Error(
-        "Each add-on must be a string",
-      );
+      throw new Error("Each add-on must be a string");
     }
 
     const normalizedAddOn = addOnName.trim();
 
     if (!normalizedAddOn) {
-      throw new Error(
-        "Add-on name cannot be empty",
-      );
+      throw new Error("Add-on name cannot be empty");
     }
 
-    const addOnPrice =
-      website.addons[normalizedAddOn];
+    const addOnPrice = website.addons[normalizedAddOn];
 
     if (addOnPrice === undefined) {
       throw new Error(
@@ -253,9 +270,7 @@ const calculatePrice = ({
       );
     }
 
-    addOnsAmount = roundMoney(
-      addOnsAmount + addOnPrice,
-    );
+    addOnsAmount = roundMoney(addOnsAmount + addOnPrice);
 
     // Store a snapshot of the add-on price
     selectedAddOns.push({
@@ -268,9 +283,7 @@ const calculatePrice = ({
   // Calculate total before discount
   // ----------------------------------------------------------
 
-  const calculatedAmount = roundMoney(
-    assignmentAmount + addOnsAmount,
-  );
+  const calculatedAmount = roundMoney(assignmentAmount + addOnsAmount);
 
   // ----------------------------------------------------------
   // Initial order has no discount
@@ -286,10 +299,7 @@ const calculatePrice = ({
   // Stripe/payment subunit
   // ----------------------------------------------------------
 
-  const amountInSubunits = toSubunit(
-    finalAmount,
-    website.subunitFactor,
-  );
+  const amountInSubunits = toSubunit(finalAmount, website.subunitFactor);
 
   // ----------------------------------------------------------
   // Return complete pricing snapshot

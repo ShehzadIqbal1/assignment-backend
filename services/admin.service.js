@@ -743,8 +743,8 @@ const createStudent = async (actor, data) => {
   const normalizedEmail = email.trim().toLowerCase();
   const normalizedTag = String(tag).trim().toLowerCase();
 
-  if (!["tutorspath", "tutorsnext"].includes(normalizedTag)) {
-    throw new ApiError(400, "Tag must be tutorspath or tutorsnext");
+  if (!["tutorspath", "tutorsnext" ,  "tutorspie"].includes(normalizedTag)) {
+    throw new ApiError(400, "Tag must be tutorspath or tutorsnext or tutorspie");
   }
 
   const existing = await User.findOne({ email: normalizedEmail });
@@ -841,8 +841,8 @@ const updateStudent = async (actor, userId, data) => {
 
   if (tag !== undefined) {
     const normalizedTag = String(tag).trim().toLowerCase();
-    if (!["tutorspath", "tutorsnext"].includes(normalizedTag)) {
-      throw new ApiError(400, "Tag must be tutorspath or tutorsnext");
+    if (!["tutorspath", "tutorsnext" ,  "tutorspie"].includes(normalizedTag)) {
+      throw new ApiError(400, "Tag must be tutorspath or tutorsnext or tutorspie");
     }
     student.tag = normalizedTag;
   }

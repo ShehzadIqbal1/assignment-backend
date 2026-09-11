@@ -1,6 +1,7 @@
 const TAG_PREFIX = {
   tutorspath: "TP",
   tutorsnext: "TN",
+  tutorspie: "TS",
   assignmentpro: "AP",
 };
 
@@ -19,7 +20,10 @@ const generateOrderNumber = ({ tag, orderId } = {}) => {
 
   const prefix =
     TAG_PREFIX[normalizedTag] ||
-    normalizedTag.replace(/[^a-z]/g, "").slice(0, 2).toUpperCase() ||
+    normalizedTag
+      .replace(/[^a-z]/g, "")
+      .slice(0, 2)
+      .toUpperCase() ||
     "TP";
 
   const suffix = String(orderId || "")
