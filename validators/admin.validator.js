@@ -132,7 +132,7 @@ const createStudentValidator = [
     .optional()
     .trim()
     .toLowerCase()
-    .isIn(["tutorspath", "tutorsnext"])
+    .isIn(["tutorspath", "tutorsnext",  "tutorspie"])
     .withMessage("Tag must be tutorspath or tutorsnext"),
 ];
 
@@ -180,8 +180,8 @@ const updateStudentValidator = [
     .optional()
     .trim()
     .toLowerCase()
-    .isIn(["tutorspath", "tutorsnext"])
-    .withMessage("Tag must be tutorspath or tutorsnext"),
+    .isIn(["tutorspath", "tutorsnext",  "tutorspie"])
+    .withMessage("Tag must be tutorspath or tutorsnext or tutorspie"),
 ];
 
 const updateStudentStatusValidator = [
