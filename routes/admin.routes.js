@@ -136,4 +136,13 @@ router.patch(
   controller.updateStudentStatus,
 );
 
+router.post(
+  "/calculate-price",
+  authorize(
+    ROLES.ADMIN,
+    ROLES.SALES_AGENT
+  ),
+  controller.calculateOrderPrice
+);
+
 module.exports = router;

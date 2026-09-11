@@ -8,6 +8,8 @@ const ORDER_STATUS = require("../constants/orderStatus");
 const ApiError = require("../utils/ApiError");
 const generateOrderNumber = require("../utils/orderNumber");
 
+const { calculatePrice } = require("./pricing.service");
+
 const STAFF_TAG = "system";
 const PANEL_ROLES = [
   ROLES.ADMIN,
@@ -743,8 +745,11 @@ const createStudent = async (actor, data) => {
   const normalizedEmail = email.trim().toLowerCase();
   const normalizedTag = String(tag).trim().toLowerCase();
 
-  if (!["tutorspath", "tutorsnext" ,  "tutorspie"].includes(normalizedTag)) {
-    throw new ApiError(400, "Tag must be tutorspath or tutorsnext or tutorspie");
+  if (!["tutorspath", "tutorsnext", "tutorspie"].includes(normalizedTag)) {
+    throw new ApiError(
+      400,
+      "Tag must be tutorspath or tutorsnext or tutorspie",
+    );
   }
 
   const existing = await User.findOne({ email: normalizedEmail });
@@ -841,8 +846,11 @@ const updateStudent = async (actor, userId, data) => {
 
   if (tag !== undefined) {
     const normalizedTag = String(tag).trim().toLowerCase();
-    if (!["tutorspath", "tutorsnext" ,  "tutorspie"].includes(normalizedTag)) {
-      throw new ApiError(400, "Tag must be tutorspath or tutorsnext or tutorspie");
+    if (!["tutorspath", "tutorsnext", "tutorspie"].includes(normalizedTag)) {
+      throw new ApiError(
+        400,
+        "Tag must be tutorspath or tutorsnext or tutorspie",
+      );
     }
     student.tag = normalizedTag;
   }
@@ -869,6 +877,23 @@ const updateStudentStatus = async (actor, userId, isActive) => {
   return buildUserResponse(student);
 };
 
+const calculateOrderPrice = async (
+  actor,
+  { tag, deadline, lineSpacing, numberOfPages, addOns = [] },
+) => {
+  if (![ROLES.ADMIN, ROLES.SALES_AGENT].includes(actor.role)) {
+    throw new ApiError(403, "Access denied");
+  }
+
+  return calculatePrice({
+    tag,
+    deadline,
+    lineSpacing,
+    numberOfPages,
+    addOns,
+  });
+};
+
 module.exports = {
   getStats,
   createStaff,
@@ -885,4 +910,5 @@ module.exports = {
   getOrderDetail,
   assignWriter,
   updateOrderStatus,
+  calculateOrderPrice,
 };

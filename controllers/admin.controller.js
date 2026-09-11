@@ -175,6 +175,16 @@ const updateStudentStatus = asyncHandler(async (req, res) => {
   });
 });
 
+const calculateOrderPrice = asyncHandler(async (req, res) => {
+  const pricing = await adminService.calculateOrderPrice(req.user, req.body);
+  return res.status(200).json({
+    success: true,
+    data: {
+      pricing,
+    },
+  });
+});
+
 module.exports = {
   getStats,
   createStaff,
@@ -191,4 +201,5 @@ module.exports = {
   getStudentDetail,
   updateStudent,
   updateStudentStatus,
+  calculateOrderPrice,
 };
