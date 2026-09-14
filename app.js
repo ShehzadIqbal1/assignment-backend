@@ -6,9 +6,10 @@ const morgan = require("morgan");
 const authRoutes = require("./routes/auth.routes");
 const orderRoutes = require("./routes/order.routes");
 const paymentRoutes = require("./routes/payment.routes");
-const siteRoutes = require("./routes/site.routes");
 const contactRoutes = require("./routes/contact.routes");
 const adminRoutes = require("./routes/admin.routes");
+const routeConfigRoutes = require("./routes/routeConfig.routes");
+const publicRoutes = require("./routes/public.routes");
 const paymentController = require("./controllers/payment.controller");
 const notFound = require("./middleware/notFound.middleware");
 const errorHandler = require("./middleware/error.middleware");
@@ -120,11 +121,6 @@ app.use("/api/v1/orders", orderRoutes);
 
 app.use("/api/v1/payments", paymentRoutes);
 
-// ============================================================
-// SITE CONFIG
-// ============================================================
-app.use("/api/v1/site", siteRoutes);
-
 app.use("/api/v1/contact", contactRoutes);
 
 // ============================================================
@@ -132,6 +128,18 @@ app.use("/api/v1/contact", contactRoutes);
 // ============================================================
 
 app.use("/api/v1/admin", adminRoutes);
+
+// ============================================================ 
+// ROUTE CONFIGURATION - ADMIN
+// ============================================================
+
+app.use("/api/v1/admin/route-configs", routeConfigRoutes);
+
+// ============================================================
+// PUBLIC SITE CONFIGURATION
+// ============================================================
+
+app.use("/api/v1/public", publicRoutes);
 
 // ============================================================
 // 404
