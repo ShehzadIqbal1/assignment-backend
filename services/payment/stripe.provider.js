@@ -25,7 +25,7 @@ const createPaymentIntent = async ({
 
       receipt_email: customerEmail,
 
-      description: `Assignment Mavens Order ${orderId}`,
+      description: `Globaldigital1 Order ${orderId}`,
 
       metadata: {
         orderId: orderId.toString(),
