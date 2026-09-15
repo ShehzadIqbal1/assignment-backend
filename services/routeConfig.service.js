@@ -156,7 +156,6 @@ const getActiveRoutes = async (siteTag) => {
 
   const configs = await RouteConfig.find({
     siteTag: normalizedTag,
-    isRealHomePage: true,
   })
     .select("path -_id")
     .sort({

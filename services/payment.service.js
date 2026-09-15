@@ -454,10 +454,9 @@ const createOrderPaymentLink = async ({ orderId, actorId }) => {
 
   const stripeLink = await provider.createPaymentLink({
     amount: order.pricing.finalAmount,
-
     currency: order.pricing.currency,
-
     orderId: order._id,
+    website: order.tag,
   });
 
   if (!payment) {

@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/ShehzadIqbal1/assignment-backend#readme",
   "dependencies": {
+    "@dotenvx/dotenvx": "^2.26.1",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
