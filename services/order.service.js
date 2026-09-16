@@ -395,9 +395,9 @@ const updatePrice = async (
 
   let newFinalAmount = calculatedAmount;
 
-  // ----------------------------------------------------------
-  // Discount amount
-  // ----------------------------------------------------------
+  // ============================================================
+  // DISCOUNT AMOUNT
+  // ============================================================
 
   if (discountAmount !== undefined) {
     if (discountAmount < 0 || discountAmount > calculatedAmount) {
@@ -414,9 +414,9 @@ const updatePrice = async (
         : Number(((newDiscountAmount / calculatedAmount) * 100).toFixed(2));
   }
 
-  // ----------------------------------------------------------
-  // Discount percentage
-  // ----------------------------------------------------------
+  // ============================================================
+  // DISCOUNT PERCENTAGE
+  // ============================================================
 
   if (discountPercentage !== undefined) {
     if (discountPercentage < 0 || discountPercentage > 100) {
@@ -432,9 +432,9 @@ const updatePrice = async (
     newFinalAmount = Number((calculatedAmount - newDiscountAmount).toFixed(2));
   }
 
-  // ----------------------------------------------------------
-  // Final amount
-  // ----------------------------------------------------------
+  // ============================================================
+  // FINAL AMOUNT
+  // ============================================================
 
   if (finalAmount !== undefined) {
     if (finalAmount < 0 || finalAmount > calculatedAmount) {
@@ -451,9 +451,9 @@ const updatePrice = async (
         : Number(((newDiscountAmount / calculatedAmount) * 100).toFixed(2));
   }
 
-  // ----------------------------------------------------------
-  // Update pricing
-  // ----------------------------------------------------------
+  // ============================================================
+  // UPDATE ORDER PRICE
+  // ============================================================
 
   order.pricing.discountAmount = newDiscountAmount;
 
@@ -461,14 +461,6 @@ const updatePrice = async (
 
   order.pricing.finalAmount = newFinalAmount;
 
-  // IMPORTANT:
-  //
-  // Stripe needs subunits.
-  //
-  // Example:
-  //
-  // $69.55 -> 6955
-  //
   order.pricing.amountInSubunits = toSubunit(
     newFinalAmount,
     order.pricing.subunitFactor,
@@ -483,6 +475,20 @@ const updatePrice = async (
   order.pricing.priceVersion += 1;
 
   await order.save();
+
+  // ============================================================
+  // REMOVE OLD STRIPE PAYMENT LINK
+  // ============================================================
+
+  const existingPayment = await paymentRepository.findByOrder(order._id);
+
+  if (existingPayment?.paymentLink?.url) {
+    existingPayment.paymentLink.url = null;
+
+    existingPayment.paymentLink.expiresAt = new Date(0);
+
+    await existingPayment.save();
+  }
 
   await OrderEvent.create({
     orderId: order._id,
@@ -512,21 +518,15 @@ const updatePrice = async (
 
   return order;
 };
-
 // ============================================================
 // EXPORTS
 // ============================================================
 
 module.exports = {
   createOrder,
-
   updateOrder,
-
   confirmOrder,
-
   getStudentOrder,
-
   findStudentOrders,
-
   updatePrice,
 };

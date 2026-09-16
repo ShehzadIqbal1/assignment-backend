@@ -78,7 +78,7 @@ const constructWebhookEvent = (rawBody, signature, webhookSecret) => {
 // CREATE STRIPE PAYMENT LINK
 // ============================================================
 
-const createPaymentLink = async ({ amount, currency, orderId }) => {
+const createPaymentLink = async ({ amount, currency, orderId, website }) => {
   const paymentLink = await stripe.paymentLinks.create({
     customer_creation: "always",
     line_items: [
@@ -99,17 +99,35 @@ const createPaymentLink = async ({ amount, currency, orderId }) => {
 
     metadata: {
       orderId: orderId.toString(),
+      website: website ? String(website): "",
     },
 
     after_completion: {
       type: "redirect",
       redirect: {
-        url: process.env.PAYMENT_SUCCESS_URL,
+        url: buildPaymentSuccessUrl(website),
       },
     },
   });
 
   return paymentLink;
+};
+
+//Heler function to build the payment success URL with optional website parameter
+const buildPaymentSuccessUrl = (website) => {
+  const baseUrl = process.env.PAYMENT_SUCCESS_URL;
+
+  if (!baseUrl) {
+    throw new Error("PAYMENT_SUCCESS_URL is not configured");
+  }
+
+  const url = new URL(baseUrl);
+
+  if (website) {
+    url.searchParams.set("website", website.toString());
+  }
+
+  return url.toString();
 };
 
 module.exports = {

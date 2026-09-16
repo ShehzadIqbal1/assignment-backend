@@ -438,19 +438,27 @@ const createOrderPaymentLink = async ({ orderId, actorId }) => {
     provider: "stripe",
   });
 
-  // reuse existing valid link
+  // ============================================================
+  // REUSE EXISTING LINK ONLY IF IT EXISTS
+  // ============================================================
 
   if (
+    payment?.paymentLink?.url &&
     payment?.paymentLink?.expiresAt &&
     payment.paymentLink.expiresAt > new Date()
   ) {
     return {
       url: payment.paymentLink.url,
+
       expiresAt: payment.paymentLink.expiresAt,
     };
   }
 
   const provider = getPaymentProvider("stripe");
+
+  // ============================================================
+  // CREATE NEW STRIPE PAYMENT LINK
+  // ============================================================
 
   const stripeLink = await provider.createPaymentLink({
     amount: order.pricing.finalAmount,
@@ -458,7 +466,13 @@ const createOrderPaymentLink = async ({ orderId, actorId }) => {
     currency: order.pricing.currency,
 
     orderId: order._id,
+
+    website: order.tag,
   });
+
+  // ============================================================
+  // CREATE PAYMENT RECORD IF NOT EXISTS
+  // ============================================================
 
   if (!payment) {
     payment = await Payment.create({
@@ -478,6 +492,10 @@ const createOrderPaymentLink = async ({ orderId, actorId }) => {
     });
   }
 
+  // ============================================================
+  // SAVE NEW LINK
+  // ============================================================
+
   payment.paymentLink = {
     url: stripeLink.url,
 
@@ -489,6 +507,12 @@ const createOrderPaymentLink = async ({ orderId, actorId }) => {
 
     generatedAt: new Date(),
   };
+
+  // update payment amount also
+
+  payment.amount = order.pricing.finalAmount;
+
+  payment.providerPaymentId = stripeLink.id;
 
   await payment.save();
 
