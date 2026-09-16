@@ -149,7 +149,6 @@ const getActiveRoutes = async (siteTag) => {
 
   const cached = activeRoutesCache.get(normalizedTag);
 
-  // Return valid cache
   if (cached && cached.expiresAt > Date.now()) {
     return cached.routes;
   }
@@ -157,23 +156,20 @@ const getActiveRoutes = async (siteTag) => {
   const configs = await RouteConfig.find({
     siteTag: normalizedTag,
   })
-    .select("path -_id")
+    .select("path isRealHomePage -_id")
     .sort({
       path: 1,
     })
     .lean();
 
-  const routes = configs.map((item) => item.path);
-
   activeRoutesCache.set(normalizedTag, {
-    routes,
+    routes: configs,
 
     expiresAt: Date.now() + CACHE_TTL_MS,
   });
 
-  return routes;
+  return configs;
 };
-
 // ============================================================
 // EXPORTS
 // ============================================================
