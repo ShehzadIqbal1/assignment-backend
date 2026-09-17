@@ -1,4 +1,5 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
@@ -95,12 +96,46 @@ if (process.env.NODE_ENV !== "production") {
 // HEALTH
 // ============================================================
 
-app.get("/", (req, res) => {
-  return res.status(200).json({
-    success: true,
+app.get("/health/ready", async (req, res) => {
+  try {
+    const dbState = mongoose.connection.readyState;
 
-    message: "Assignment backend API is running",
-  });
+    /*
+      Mongoose states:
+      0 = disconnected
+      1 = connected
+      2 = connecting
+      3 = disconnecting
+    */
+
+    if (dbState !== 1) {
+      return res.status(503).json({
+        status: "error",
+
+        checks: {
+          database: "unhealthy",
+        },
+      });
+    }
+
+    return res.status(200).json({
+      status: "ok",
+
+      checks: {
+        database: "healthy",
+      },
+    });
+  } catch (error) {
+    return res.status(503).json({
+      status: "error",
+
+      checks: {
+        database: "unhealthy",
+      },
+
+      error: error.message,
+    });
+  }
 });
 
 // ============================================================
@@ -129,7 +164,7 @@ app.use("/api/v1/contact", contactRoutes);
 
 app.use("/api/v1/admin", adminRoutes);
 
-// ============================================================ 
+// ============================================================
 // ROUTE CONFIGURATION - ADMIN
 // ============================================================
 
